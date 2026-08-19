@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import Papa from "papaparse";
 import HERO_IMG from "./assets/hero.webp";
 import DETAIL_IMG from "./assets/detail.webp";
 import VARSITY_IMG from "./assets/varsity.webp";
@@ -8,114 +7,15 @@ import STEEZE_BACK_DETAIL_IMG from "./assets/steeze_back_detail.webp";
 import VARSITY_PATCH_DETAIL_IMG from "./assets/varsity_patch_detail.webp";
 
 /* ------------------------------------------------------------------
-   STEEZEDRIP — brand site, v3
-   Frontend-only. Products load from a public Google Sheet (published
-   as CSV) so new drops can be added from a phone, no code required.
-   Checkout is WhatsApp / bank transfer — no payment gateway backend.
+   STEEZEDRIP — brand site, v2
+   Real product photography + light/dark toggle (defaults to light).
    ------------------------------------------------------------------ */
 
-const WHATSAPP_NUMBER = "2348110092995"; // SteezeDrip WhatsApp Business number
+
+const WHATSAPP_NUMBER = "2348110092995";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://your-backend-url.onrender.com";
 const waLink = (msg) =>
   `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
-
-// TODO: paste your Google Sheet's "Publish to web" CSV link here.
-// See README.md → "Managing products" for exact steps.
-// Until this is set, the site just shows the 3 launch products below.
-const SHEET_CSV_URL = "";
-
-const DEFAULT_SIZES = ["S", "M", "L", "XL"];
-const DEFAULT_COLOR_NAMES = ["White", "Black", "Red", "Yellow"];
-
-// Type any of these color names in the sheet and it'll get the right
-// swatch automatically. Unrecognized names still work, just with a
-// neutral grey swatch.
-const COLOR_HEX_MAP = {
-  white: "#f5f2ea",
-  black: "#161513",
-  red: "#8a2b23",
-  yellow: "#d9b23c",
-  blue: "#2c4a7c",
-  navy: "#1b2436",
-  green: "#2f5c3d",
-  grey: "#7d7a72",
-  gray: "#7d7a72",
-  cream: "#e9e1cd",
-  brown: "#5b4330",
-  pink: "#c98a9a",
-  purple: "#5a3d6b",
-  orange: "#c96a2e",
-  beige: "#d8c8a8",
-  olive: "#5c5a34",
-  maroon: "#5c1f27",
-  charcoal: "#3d3b36",
-};
-
-function slugify(str) {
-  return str
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
-
-function parseListField(value, fallback) {
-  if (!value || !String(value).trim()) return fallback;
-  return String(value)
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-function colorsFromNames(names) {
-  return names.map((name) => ({
-    name,
-    hex: COLOR_HEX_MAP[name.toLowerCase()] || "#9a958a",
-  }));
-}
-
-function isActiveValue(value) {
-  if (value === undefined || value === null || String(value).trim() === "") return true;
-  const v = String(value).trim().toLowerCase();
-  return !(v === "false" || v === "no" || v === "0");
-}
-
-// Turns one row of the Google Sheet into a product object the rest of
-// the site already knows how to render.
-function rowToProduct(row, index) {
-  const name = (row.name || "").trim();
-  if (!name) return null;
-
-  const priceNGN = Number(String(row.price_ngn || "0").replace(/[^0-9.]/g, "")) || 0;
-  const priceUSD = Number(String(row.price_usd || "0").replace(/[^0-9.]/g, "")) || 0;
-  const colorNames = parseListField(row.colors, DEFAULT_COLOR_NAMES);
-  const sizes = parseListField(row.sizes, DEFAULT_SIZES);
-
-  const images = [];
-  if (row.image_url && row.image_url.trim()) {
-    images.push({ src: row.image_url.trim(), pos: "center", label: (row.image_label || "Front").trim() });
-  }
-  if (row.image2_url && row.image2_url.trim()) {
-    images.push({ src: row.image2_url.trim(), pos: "center", label: (row.image2_label || "Detail").trim() });
-  }
-  if (!images.length) images.push({ src: "", pos: "center", label: name });
-
-  return {
-    id: `${slugify(name)}-${index}`,
-    name,
-    cat: (row.category || "").trim(),
-    category: (row.filter || "").trim().toLowerCase(),
-    tag: (row.badge || "").trim() || null,
-    priceNGN,
-    priceUSD,
-    desc: (row.description || "").trim(),
-    img: images[0].src,
-    pos: images[0].pos,
-    images,
-    colors: colorsFromNames(colorNames),
-    sizes,
-    active: isActiveValue(row.active),
-  };
-}
 
 const NAV_LINKS = [
   { label: "The Drop", href: "#collection" },
@@ -131,6 +31,8 @@ const STATS = [
   { k: "CHECKOUT", v: "DM ONLY" },
 ];
 
+const SIZES = ["S", "M", "L", "XL"];
+
 const FILTERS = [
   { key: "all", label: "Shop All" },
   { key: "latest", label: "Latest Collection" },
@@ -144,7 +46,7 @@ const ALL_COLORS = [
   { name: "Yellow", hex: "#d9b23c" },
 ];
 
-const FALLBACK_PRODUCTS = [
+const COLLECTION = [
   {
     id: "not-average-tee",
     name: "Not Average Tee",
@@ -163,8 +65,6 @@ const FALLBACK_PRODUCTS = [
       { src: NOT_AVERAGE_WORN_IMG, pos: "center 12%", label: "Worn" },
     ],
     colors: ALL_COLORS,
-    sizes: DEFAULT_SIZES,
-    active: true,
   },
   {
     id: "steeze-tee",
@@ -184,8 +84,6 @@ const FALLBACK_PRODUCTS = [
       { src: STEEZE_BACK_DETAIL_IMG, pos: "center 10%", label: "Back Detail" },
     ],
     colors: ALL_COLORS,
-    sizes: DEFAULT_SIZES,
-    active: true,
   },
   {
     id: "steeze-varsity-09",
@@ -205,8 +103,6 @@ const FALLBACK_PRODUCTS = [
       { src: VARSITY_PATCH_DETAIL_IMG, pos: "center 30%", label: "Patch Detail" },
     ],
     colors: ALL_COLORS,
-    sizes: DEFAULT_SIZES,
-    active: true,
   },
 ];
 
@@ -214,9 +110,9 @@ const formatNGN = (n) => `₦${n.toLocaleString("en-NG")}`;
 const formatUSD = (n) => `$${n.toLocaleString("en-US")}`;
 
 const LOOKBOOK = [
-  { title: "Not Average × Steeze.", note: "THE DUO", img: HERO_IMG, pos: "center 15%", productName: "Steeze. Tee" },
-  { title: "Not Average", note: "DETAIL", img: DETAIL_IMG, pos: "center 20%", productName: "Not Average Tee" },
-  { title: "Steeze Varsity", note: "STYLE 09", img: VARSITY_IMG, pos: "center 12%", productName: "Steeze Varsity 09" },
+  { title: "Not Average × Steeze.", note: "THE DUO", img: HERO_IMG, pos: "center 15%", productId: "steeze-tee" },
+  { title: "Not Average", note: "DETAIL", img: DETAIL_IMG, pos: "center 20%", productId: "not-average-tee" },
+  { title: "Steeze Varsity", note: "STYLE 09", img: VARSITY_IMG, pos: "center 12%", productId: "steeze-varsity-09" },
 ];
 
 
@@ -309,9 +205,8 @@ function TiltCard({ children, className = "", strength = 8 }) {
 
 function ProductModal({ product, onClose, onAddToCart }) {
   const gallery = product.images && product.images.length ? product.images : [{ src: product.img, pos: product.pos, label: product.name }];
-  const sizes = product.sizes && product.sizes.length ? product.sizes : DEFAULT_SIZES;
   const [activeImg, setActiveImg] = useState(0);
-  const [size, setSize] = useState(sizes[Math.min(1, sizes.length - 1)]);
+  const [size, setSize] = useState(SIZES[1]);
   const [color, setColor] = useState(product.colors[0].name);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
@@ -362,7 +257,7 @@ function ProductModal({ product, onClose, onAddToCart }) {
           <div className="pm-field">
             <span className="pm-label">Size</span>
             <div className="pm-options">
-              {sizes.map((s) => (
+              {SIZES.map((s) => (
                 <button
                   key={s}
                   className={`pm-chip ${size === s ? "active" : ""}`}
@@ -504,11 +399,11 @@ function CheckoutModal({ cart, onClose, onBack }) {
       (i) => `• ${i.name} — ${i.size}, ${i.color} × ${i.qty} — ${formatNGN(i.priceNGN * i.qty)}`
     );
     return [
-      "Hi SteezeDrip 👋, I'd like to place an order:",
+      "Hi SteezeDrip, I'd like to place an order:",
       "",
       ...lines,
       "",
-      `Total: ${formatNGN(subtotalNGN)} (${formatUSD(subtotalUSD)})`,
+      `Subtotal: ${formatNGN(subtotalNGN)} (${formatUSD(subtotalUSD)})`,
       "",
       `Name: ${name || "-"}`,
       `Phone: ${phone || "-"}`,
@@ -543,7 +438,7 @@ function CheckoutModal({ cart, onClose, onBack }) {
             <span className="pm-label">Your Details</span>
             <input className="ck-input" placeholder="Full name *" value={name} onChange={(e) => setName(e.target.value)} />
             <input className="ck-input" placeholder="Phone / WhatsApp number *" value={phone} onChange={(e) => setPhone(e.target.value)} />
-            <textarea className="ck-input" placeholder="Delivery address (optional)" rows={2} value={address} onChange={(e) => setAddress(e.target.value)} />
+            <textarea className="ck-input" placeholder="Delivery address" rows={2} value={address} onChange={(e) => setAddress(e.target.value)} />
           </div>
 
           <div className="pm-actions">
@@ -561,9 +456,7 @@ function CheckoutModal({ cart, onClose, onBack }) {
             </button>
           </div>
           <p className="pm-note">
-            Fill in your name and phone, then tap the button — your order
-            goes straight to our WhatsApp. We'll confirm and arrange
-            payment details with you directly. 🔒
+            Fill in your details above, then tap the button — your full order lands straight in our WhatsApp.
           </p>
         </div>
       </div>
@@ -581,46 +474,27 @@ export default function App() {
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
-  const [products, setProducts] = useState(FALLBACK_PRODUCTS);
+  const [orderBanner, setOrderBanner] = useState(null);
 
-  // Pull products from the Google Sheet (if one's been configured). Falls
-  // back to FALLBACK_PRODUCTS silently if the sheet isn't set up yet, or
-  // the fetch fails for any reason — the site never shows a broken page.
   useEffect(() => {
-    if (!SHEET_CSV_URL || !SHEET_CSV_URL.trim()) return;
-    fetch(SHEET_CSV_URL)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Sheet fetch failed: ${res.status}`);
-        return res.text();
-      })
-      .then((csvText) => {
-        Papa.parse(csvText, {
-          header: true,
-          skipEmptyLines: true,
-          complete: (results) => {
-            const parsed = results.data
-              .map((row, i) => rowToProduct(row, i))
-              .filter(Boolean)
-              .filter((p) => p.active);
-            if (parsed.length) setProducts(parsed);
-          },
-        });
-      })
-      .catch((err) => {
-        console.error("Could not load products from Google Sheet, showing fallback products.", err);
-      });
+    const params = new URLSearchParams(window.location.search);
+    const orderStatus = params.get("order");
+    if (orderStatus) {
+      setOrderBanner({ status: orderStatus, ref: params.get("ref") });
+      if (orderStatus === "success") setCart([]);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
   }, []);
-
   const heroRef = useRef(null);
   const frontCardRef = useRef(null);
   const midCardRef = useRef(null);
   const backCardRef = useRef(null);
 
-  const openProduct = (nameOrProduct) => {
+  const openProduct = (idOrProduct) => {
     const product =
-      typeof nameOrProduct === "string"
-        ? products.find((p) => p.name === nameOrProduct)
-        : nameOrProduct;
+      typeof idOrProduct === "string"
+        ? COLLECTION.find((p) => p.id === idOrProduct)
+        : idOrProduct;
     if (product) setSelectedProduct(product);
   };
 
@@ -829,6 +703,17 @@ export default function App() {
         .burger{display:none; flex-direction:column; gap:5px; background:none; border:none; cursor:pointer; z-index:70;}
         .nav-right-mobile{display:none; align-items:center; gap:14px;}
 
+        .order-banner{
+          position:fixed; top:0; left:0; right:0; z-index:110;
+          display:flex; align-items:center; justify-content:center; gap:16px;
+          padding:14px 20px; font-size:13px; font-weight:600; text-align:center;
+          color:#fff; box-shadow:var(--shadow);
+        }
+        .order-banner.success{background:#1f7a3d;}
+        .order-banner.failed{background:#8a3b2b;}
+        .order-banner.cancelled{background:#5a5648;}
+        .order-banner button{background:none; border:none; color:#fff; cursor:pointer; font-size:14px; opacity:0.8;}
+        .order-banner button:hover{opacity:1;}
         .burger span{width:26px; height:2px; background:var(--text); display:block;}
 
         .mobile-panel{
@@ -979,7 +864,6 @@ export default function App() {
         }
         .filter-tab.active{background:var(--gold); border-color:var(--gold); color:var(--bg);}
         .filter-tab:not(.active):hover{border-color:var(--gold); color:var(--text);}
-        .empty-note{grid-column:1/-1; color:var(--text-dim); font-size:14px; padding:20px 0;}
 
         /* ---------- story ---------- */
         .story-grid{
@@ -1272,9 +1156,9 @@ export default function App() {
           </button>
           <button className="cart-btn" onClick={() => setCartOpen(true)} aria-label="Open cart">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M6 7h15l-1.5 9.5a2 2 0 0 1-2 1.7H8.7a2 2 0 0 1-2-1.7L5 4H2" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="9" cy="21" r="1.4" fill="currentColor"/>
-              <circle cx="18" cy="21" r="1.4" fill="currentColor"/>
+              <path d="M6 7h15l-1.5 9.5a2 2 0 0 1-2 1.7H8.7a2 2 0 0 1-2-1.7L5 4H2" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="9" cy="21" r="1.4" fill="currentColor" />
+              <circle cx="18" cy="21" r="1.4" fill="currentColor" />
             </svg>
             {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
           </button>
@@ -1289,14 +1173,14 @@ export default function App() {
         <div className="nav-right-mobile">
           <button className="cart-btn" onClick={() => setCartOpen(true)} aria-label="Open cart">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M6 7h15l-1.5 9.5a2 2 0 0 1-2 1.7H8.7a2 2 0 0 1-2-1.7L5 4H2" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="9" cy="21" r="1.4" fill="currentColor"/>
-              <circle cx="18" cy="21" r="1.4" fill="currentColor"/>
+              <path d="M6 7h15l-1.5 9.5a2 2 0 0 1-2 1.7H8.7a2 2 0 0 1-2-1.7L5 4H2" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="9" cy="21" r="1.4" fill="currentColor" />
+              <circle cx="18" cy="21" r="1.4" fill="currentColor" />
             </svg>
             {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
           </button>
           <button className="burger" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
-            <span/><span/><span/>
+            <span /><span /><span />
           </button>
         </div>
       </nav>
@@ -1327,6 +1211,17 @@ export default function App() {
           Chat On WhatsApp
         </a>
       </div>
+
+      {orderBanner && (
+        <div className={`order-banner ${orderBanner.status}`}>
+          <span>
+            {orderBanner.status === "success" && "Payment received — your order is confirmed! We'll reach out on WhatsApp to arrange delivery."}
+            {orderBanner.status === "failed" && "That payment didn't go through. No charge was made — please try again."}
+            {orderBanner.status === "cancelled" && "Payment was cancelled. Your bag is still saved whenever you're ready."}
+          </span>
+          <button onClick={() => setOrderBanner(null)} aria-label="Dismiss">✕</button>
+        </div>
+      )}
 
       {/* ---------------- HERO ---------------- */}
       <section id="top" className="hero" ref={heroRef} onMouseMove={onHeroMove} onMouseLeave={onHeroLeave}>
@@ -1423,11 +1318,8 @@ export default function App() {
           ))}
         </Reveal>
         <div className="collection-grid">
-          {products.filter((item) => activeFilter === "all" || item.category === activeFilter).length === 0 && (
-            <p className="empty-note">Nothing in this category yet — check back soon, or view Shop All.</p>
-          )}
-          {products.filter((item) => activeFilter === "all" || item.category === activeFilter).map((item) => (
-            <Reveal key={item.id || item.name}>
+          {COLLECTION.filter((item) => activeFilter === "all" || item.category === activeFilter).map((item) => (
+            <Reveal key={item.name}>
               <TiltCard>
                 <div className="product-card" onClick={() => openProduct(item)} role="button" tabIndex={0}>
                   <div className="swatch">
@@ -1438,8 +1330,8 @@ export default function App() {
                   <span className="product-cat">{item.cat}</span>
                   <h3 className="product-name">{item.name}</h3>
                   <div className="price-row">
-                    <span className="primary">{formatNGN(item.priceNGN)}</span>
-                    <span className="secondary">{formatUSD(item.priceUSD)}</span>
+                    <span className="primary">{item.priceN}</span>
+                    <span className="secondary">{item.priceD}</span>
                   </div>
                   <a
                     className="btn btn-outline enquire-btn"
@@ -1492,7 +1384,7 @@ export default function App() {
             <p className="story-quote">
               "This wasn't about becoming champions overnight — it was about
               rediscovering ourselves in the quiet corners, <span>purpose
-              sharpened, strength returned, new confidence in bloom.</span>"
+                sharpened, strength returned, new confidence in bloom.</span>"
             </p>
             <p className="story-copy">
               SteezeDrip started on the streets of Lagos and grew into a
@@ -1528,7 +1420,7 @@ export default function App() {
               <div
                 className="look-frame"
                 key={f.title}
-                onClick={() => openProduct(f.productName)}
+                onClick={() => openProduct(f.productId)}
                 role="button" tabIndex={0}
               >
                 <img src={f.img} alt={f.title} style={{ objectPosition: f.pos }} />
@@ -1555,7 +1447,7 @@ export default function App() {
               checkout, just steeze. Tell us the piece, your size, and where
               it's headed.
             </p>
-            <div className="contact-number">+234 812 345 6789</div>
+            <div className="contact-number">+234 811 009 2995</div>
             <p className="contact-note">We reply within a few hours, Lagos time (WAT).</p>
           </div>
           <a
