@@ -916,17 +916,23 @@ export default function App() {
         .price-row{display:flex; justify-content:space-between; align-items:baseline; margin-top:auto;}
         .price-row .primary{font-weight:700; color:var(--gold-soft);}
         .price-row .secondary{color:var(--text-dim); font-size:13px;}
-        .enquire-btn{
-          margin-top:6px; width:100%; justify-content:center; padding:12px; font-size:11px;
-        }
         .product-card{cursor:pointer;}
         .swatch-view{
-          position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-          background:rgba(0,0,0,0.38); color:#fff; font-size:12px; letter-spacing:0.16em;
-          text-transform:uppercase; font-weight:600; opacity:0; transition:opacity 0.25s ease;
+          position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+          background:rgba(0,0,0,0.52); opacity:0; transition:opacity 0.28s ease;
           pointer-events:none;
         }
-        .product-card:hover .swatch-view{opacity:1;}
+        .product-card:hover .swatch-view{opacity:1; pointer-events:auto;}
+        .quick-view-btn{
+          display:inline-flex; align-items:center; gap:8px;
+          padding:11px 22px; font-size:12px; font-weight:700; letter-spacing:0.14em;
+          text-transform:uppercase; border-radius:2px; cursor:pointer;
+          background:var(--gold); color:var(--bg); border:none;
+          box-shadow:0 4px 18px rgba(0,0,0,0.4);
+          transition:transform 0.18s ease, background 0.18s ease;
+        }
+        .quick-view-btn:hover{transform:scale(1.05); background:var(--gold-soft);}
+        .quick-view-label{font-size:11px; letter-spacing:0.18em; color:rgba(255,255,255,0.75); text-transform:uppercase;}
         .look-frame{cursor:pointer;}
 
         /* ---------- cart button ---------- */
@@ -1325,7 +1331,16 @@ export default function App() {
                   <div className="swatch">
                     {item.tag && <span className="card-tag">{item.tag}</span>}
                     <img src={item.img} alt={item.name} style={{ objectPosition: item.pos }} />
-                    <span className="swatch-view">View Details</span>
+                    <div className="swatch-view">
+                      <button
+                        className="quick-view-btn"
+                        onClick={(e) => { e.stopPropagation(); openProduct(item); }}
+                        aria-label={`Quick view ${item.name}`}
+                      >
+                        ⚡ Quick View
+                      </button>
+                      <span className="quick-view-label">Pick size &amp; quantity</span>
+                    </div>
                   </div>
                   <span className="product-cat">{item.cat}</span>
                   <h3 className="product-name">{item.name}</h3>
@@ -1333,14 +1348,6 @@ export default function App() {
                     <span className="primary">{item.priceN}</span>
                     <span className="secondary">{item.priceD}</span>
                   </div>
-                  <a
-                    className="btn btn-outline enquire-btn"
-                    href={waLink(`Hi SteezeDrip, I'd like to enquire about the ${item.name}.`)}
-                    target="_blank" rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    Enquire On WhatsApp
-                  </a>
                 </div>
               </TiltCard>
             </Reveal>
