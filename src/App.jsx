@@ -1478,7 +1478,7 @@ export default function App() {
           <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer">TikTok</a>
         </div>
         <div className="footer-bottom">
-          <span>© 2026 SteezeDrip. All rights reserved.</span>
+          <span>© 2026 Only1kuzzy. All rights reserved.</span>
           <span>Lagos, Nigeria</span>
         </div>
       </footer>
