@@ -131,7 +131,33 @@ const DEFAULT_COLLECTION = [
 const COLLECTION = DEFAULT_COLLECTION;
 
 // Google Sheet published CSV URL (can also be supplied via VITE_SHEET_CSV_URL)
-const SHEET_CSV_URL = import.meta.env.VITE_SHEET_CSV_URL || "";
+const SHEET_CSV_URL =
+  import.meta.env.VITE_SHEET_CSV_URL ||
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlEob4aogBcgKV9SMLFpckYkd9N8jKi3QIrwNOVlngIdqAdbax6GsM3JBg_yGARDiWU16YUuHuV8Lv/pub?gid=853100014&single=true&output=csv";
+
+function normalizeImgUrl(url) {
+  if (!url || typeof url !== "string") return "";
+  let clean = url.trim();
+  if (
+    !clean ||
+    clean.toUpperCase().includes("PASTE YOUR") ||
+    clean.toUpperCase().includes("PASTE A SECOND") ||
+    clean.toUpperCase().includes("IMGUR IMAGE LINK")
+  ) {
+    return "";
+  }
+  // Convert imgur album/post links like https://imgur.com/a/zlkNkNt to direct image https://i.imgur.com/zlkNkNt.jpg
+  const imgurAlbumMatch = clean.match(/imgur\.com\/(?:a|gallery)\/([a-zA-Z0-9]+)/i);
+  if (imgurAlbumMatch) {
+    return `https://i.imgur.com/${imgurAlbumMatch[1]}.jpg`;
+  }
+  const imgurDirectMatch = clean.match(/imgur\.com\/([a-zA-Z0-9]+)(?:\.[a-zA-Z0-9]+)?$/i);
+  if (imgurDirectMatch && !clean.includes("/a/") && !clean.includes("/gallery/")) {
+    const id = imgurDirectMatch[1];
+    return clean.includes(".") ? clean : `https://i.imgur.com/${id}.jpg`;
+  }
+  return clean;
+}
 
 function normalizeGoogleSheetUrl(url) {
   if (!url || typeof url !== "string") return "";
@@ -254,10 +280,13 @@ function parseProductsCSV(csvText) {
             .filter(Boolean)
         : SIZES;
 
-      const img1 = getVal(row, "image_url", "imageurl", "image", "img", "photo", "image1", "image1_url");
+      const rawImg1 = getVal(row, "image_url", "imageurl", "image", "img", "photo", "image1", "image1_url");
       const label1 = getVal(row, "image_label", "imagelabel", "image1_label", "label1") || "Front";
-      const img2 = getVal(row, "image2_url", "image2url", "image2", "photo2");
+      const rawImg2 = getVal(row, "image2_url", "image2url", "image2", "photo2");
       const label2 = getVal(row, "image2_label", "image2label", "label2") || "Back";
+
+      const img1 = normalizeImgUrl(rawImg1);
+      const img2 = normalizeImgUrl(rawImg2);
 
       const mainImg = img1 || HERO_IMG;
       const images = [];
