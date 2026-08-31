@@ -467,6 +467,7 @@ function CheckoutModal({ cart, onClose, onBack }) {
 /* ---------- main ---------- */
 
 export default function App() {
+  const [collection, setCollection] = useState(DEFAULT_COLLECTION);
   const [menuOpen, setMenuOpen] = useState(false);
   const [theme, setTheme] = useState("light"); // "light" first, switchable to "dark"
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -475,6 +476,24 @@ export default function App() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
   const [orderBanner, setOrderBanner] = useState(null);
+
+  useEffect(() => {
+    if (!SHEET_CSV_URL) return;
+    fetch(SHEET_CSV_URL)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch products from Google Sheet");
+        return res.text();
+      })
+      .then((csvText) => {
+        const parsed = parseProductsCSV(csvText);
+        if (parsed && parsed.length > 0) {
+          setCollection(parsed);
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not load products from Google Sheet, using fallback:", err);
+      });
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -493,7 +512,7 @@ export default function App() {
   const openProduct = (idOrProduct) => {
     const product =
       typeof idOrProduct === "string"
-        ? COLLECTION.find((p) => p.id === idOrProduct)
+        ? (collection.find((p) => p.id === idOrProduct) || DEFAULT_COLLECTION.find((p) => p.id === idOrProduct) || collection[0])
         : idOrProduct;
     if (product) setSelectedProduct(product);
   };
@@ -1324,8 +1343,8 @@ export default function App() {
           ))}
         </Reveal>
         <div className="collection-grid">
-          {COLLECTION.filter((item) => activeFilter === "all" || item.category === activeFilter).map((item) => (
-            <Reveal key={item.name}>
+          {collection.filter((item) => activeFilter === "all" || item.category === activeFilter).map((item) => (
+            <Reveal key={item.id || item.name}>
               <TiltCard>
                 <div className="product-card" onClick={() => openProduct(item)} role="button" tabIndex={0}>
                   <div className="swatch">
