@@ -46,7 +46,26 @@ const ALL_COLORS = [
   { name: "Yellow", hex: "#d9b23c" },
 ];
 
-const COLLECTION = [
+const COLOR_HEX_MAP = {
+  white: "#f5f2ea",
+  black: "#161513",
+  red: "#8a2b23",
+  yellow: "#d9b23c",
+  blue: "#2b4c7e",
+  green: "#2d5a27",
+  grey: "#808080",
+  gray: "#808080",
+  navy: "#0a192f",
+  brown: "#5c4033",
+  beige: "#d4c5b9",
+  orange: "#d96b27",
+  purple: "#582c6b",
+  pink: "#d4758d",
+  cream: "#f7f4ea",
+  olive: "#556b2f",
+};
+
+const DEFAULT_COLLECTION = [
   {
     id: "not-average-tee",
     name: "Not Average Tee",
@@ -65,6 +84,7 @@ const COLLECTION = [
       { src: NOT_AVERAGE_WORN_IMG, pos: "center 12%", label: "Worn" },
     ],
     colors: ALL_COLORS,
+    sizes: SIZES,
   },
   {
     id: "steeze-tee",
@@ -84,6 +104,7 @@ const COLLECTION = [
       { src: STEEZE_BACK_DETAIL_IMG, pos: "center 10%", label: "Back Detail" },
     ],
     colors: ALL_COLORS,
+    sizes: SIZES,
   },
   {
     id: "steeze-varsity-09",
@@ -103,8 +124,173 @@ const COLLECTION = [
       { src: VARSITY_PATCH_DETAIL_IMG, pos: "center 30%", label: "Patch Detail" },
     ],
     colors: ALL_COLORS,
+    sizes: SIZES,
   },
 ];
+
+const COLLECTION = DEFAULT_COLLECTION;
+
+// Google Sheet published CSV URL (can also be supplied via VITE_SHEET_CSV_URL)
+const SHEET_CSV_URL = import.meta.env.VITE_SHEET_CSV_URL || "";
+
+function normalizeGoogleSheetUrl(url) {
+  if (!url || typeof url !== "string") return "";
+  let clean = url.trim();
+  if (!clean) return "";
+  if (clean.includes("docs.google.com/spreadsheets/d/")) {
+    if (clean.includes("/pubhtml")) {
+      return clean.replace("/pubhtml", "/pub?output=csv");
+    }
+    if (clean.includes("/pub?") && !clean.includes("output=csv")) {
+      return clean + (clean.includes("?") ? "&" : "?") + "output=csv";
+    }
+    if (clean.includes("/edit") || clean.includes("/view")) {
+      const idMatch = clean.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      const gidMatch = clean.match(/gid=([0-9]+)/);
+      if (idMatch && idMatch[1]) {
+        const gidParam = gidMatch ? `&gid=${gidMatch[1]}` : "";
+        return `https://docs.google.com/spreadsheets/d/${idMatch[1]}/export?format=csv${gidParam}`;
+      }
+    }
+  }
+  return clean;
+}
+
+function parseCSV(text) {
+  const p = [];
+  let row = [""];
+  let inQuotes = false;
+  let i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    const next = text[i + 1];
+    if (c === '"') {
+      if (inQuotes && next === '"') {
+        row[row.length - 1] += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === "," && !inQuotes) {
+      row.push("");
+    } else if ((c === "\r" || c === "\n") && !inQuotes) {
+      if (c === "\r" && next === "\n") i++;
+      p.push(row);
+      row = [""];
+    } else {
+      row[row.length - 1] += c;
+    }
+    i++;
+  }
+  if (row.length > 1 || row[0] !== "") {
+    p.push(row);
+  }
+  return p;
+}
+
+function parseProductsCSV(csvText) {
+  try {
+    if (!csvText || typeof csvText !== "string") return [];
+    const rows = parseCSV(csvText.trim());
+    if (rows.length < 2) return [];
+
+    const headers = rows[0].map((h) => h.trim().toLowerCase().replace(/[\s_-]+/g, ""));
+    const getVal = (row, ...possibleKeys) => {
+      for (const key of possibleKeys) {
+        const cleanKey = key.toLowerCase().replace(/[\s_-]+/g, "");
+        const idx = headers.indexOf(cleanKey);
+        if (idx !== -1 && row[idx] !== undefined) {
+          return row[idx].trim();
+        }
+      }
+      return "";
+    };
+
+    const products = [];
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r];
+      if (!row || row.length === 0 || (row.length === 1 && !row[0])) continue;
+
+      const activeVal = getVal(row, "active", "is_active", "status", "visible", "show", "published");
+      if (activeVal && ["false", "0", "no", "inactive", "draft"].includes(activeVal.toLowerCase())) {
+        continue;
+      }
+
+      const name = getVal(row, "name", "product_name", "title", "item");
+      if (!name) continue;
+
+      const cat = getVal(row, "category", "cat", "type") || "Apparel";
+      const filterRaw = getVal(row, "filter", "collection", "tab", "category_filter").toLowerCase();
+      const category = filterRaw === "latest" || filterRaw === "bestseller" ? filterRaw : "all";
+      const tag = getVal(row, "badge", "tag", "label");
+
+      const rawPriceNGN = getVal(row, "price_ngn", "price ngn", "pricengn", "ngn", "price_naira", "price");
+      const rawPriceUSD = getVal(row, "price_usd", "price usd", "priceusd", "usd", "price_dollar");
+      const priceNGN = Number(rawPriceNGN.replace(/[^0-9.]/g, "")) || 0;
+      const priceUSD = Number(rawPriceUSD.replace(/[^0-9.]/g, "")) || 0;
+
+      const desc = getVal(row, "description", "desc", "details");
+
+      const rawColors = getVal(row, "colors", "color", "colour", "colours");
+      let colors = ALL_COLORS;
+      if (rawColors) {
+        const parsedColors = rawColors
+          .split(",")
+          .map((c) => c.trim())
+          .filter(Boolean)
+          .map((cName) => {
+            const lower = cName.toLowerCase();
+            const hex = COLOR_HEX_MAP[lower] || (cName.startsWith("#") ? cName : "#161513");
+            return { name: cName, hex };
+          });
+        if (parsedColors.length > 0) colors = parsedColors;
+      }
+
+      const rawSizes = getVal(row, "sizes", "size");
+      const sizes = rawSizes
+        ? rawSizes
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : SIZES;
+
+      const img1 = getVal(row, "image_url", "imageurl", "image", "img", "photo", "image1", "image1_url");
+      const label1 = getVal(row, "image_label", "imagelabel", "image1_label", "label1") || "Front";
+      const img2 = getVal(row, "image2_url", "image2url", "image2", "photo2");
+      const label2 = getVal(row, "image2_label", "image2label", "label2") || "Back";
+
+      const mainImg = img1 || HERO_IMG;
+      const images = [];
+      if (img1) images.push({ src: img1, pos: "center 20%", label: label1 });
+      if (img2) images.push({ src: img2, pos: "center 20%", label: label2 });
+      if (images.length === 0) images.push({ src: HERO_IMG, pos: "center 20%", label: "Front" });
+
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || `item-${r}`;
+
+      products.push({
+        id: slug,
+        name,
+        cat,
+        priceNGN,
+        priceUSD,
+        priceN: formatNGN(priceNGN),
+        priceD: formatUSD(priceUSD),
+        tag,
+        category,
+        img: mainImg,
+        pos: "center 20%",
+        desc,
+        images,
+        colors,
+        sizes: sizes.length ? sizes : SIZES,
+      });
+    }
+    return products;
+  } catch (e) {
+    console.error("Error parsing products CSV:", e);
+    return [];
+  }
+}
 
 const formatNGN = (n) => `₦${n.toLocaleString("en-NG")}`;
 const formatUSD = (n) => `$${n.toLocaleString("en-US")}`;
@@ -204,12 +390,19 @@ function TiltCard({ children, className = "", strength = 8 }) {
 /* ---------- product modal ---------- */
 
 function ProductModal({ product, onClose, onAddToCart }) {
-  const gallery = product.images && product.images.length ? product.images : [{ src: product.img, pos: product.pos, label: product.name }];
+  const gallery =
+    product.images && product.images.length
+      ? product.images
+      : [{ src: product.img || HERO_IMG, pos: product.pos || "center 20%", label: product.name || "Product" }];
   const [activeImg, setActiveImg] = useState(0);
-  const [size, setSize] = useState(SIZES[1]);
-  const [color, setColor] = useState(product.colors[0].name);
+  const availableSizes = product.sizes && product.sizes.length ? product.sizes : SIZES;
+  const availableColors = product.colors && product.colors.length ? product.colors : ALL_COLORS;
+  const [size, setSize] = useState(availableSizes[0] || "M");
+  const [color, setColor] = useState(availableColors[0]?.name || "Standard");
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+
+  const currentImg = gallery[activeImg] || gallery[0] || { src: HERO_IMG, pos: "center 20%", label: product.name };
 
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
@@ -228,18 +421,18 @@ function ProductModal({ product, onClose, onAddToCart }) {
       <div className="pm-card">
         <button className="pm-close" onClick={onClose} aria-label="Close">✕</button>
         <div className="pm-image">
-          <img src={gallery[activeImg].src} alt={`${product.name} — ${gallery[activeImg].label}`} style={{ objectPosition: gallery[activeImg].pos }} />
+          <img src={currentImg.src} alt={`${product.name} — ${currentImg.label || ""}`} style={{ objectPosition: currentImg.pos || "center 20%" }} />
           {product.tag && <span className="card-tag">{product.tag}</span>}
           {gallery.length > 1 && (
             <div className="pm-thumbs">
               {gallery.map((g, i) => (
                 <button
-                  key={g.label}
+                  key={g.label || i}
                   className={`pm-thumb ${activeImg === i ? "active" : ""}`}
                   onClick={() => setActiveImg(i)}
                 >
-                  <img src={g.src} alt={g.label} style={{ objectPosition: g.pos }} />
-                  <span>{g.label}</span>
+                  <img src={g.src} alt={g.label || `Photo ${i + 1}`} style={{ objectPosition: g.pos || "center 20%" }} />
+                  <span>{g.label || `View ${i + 1}`}</span>
                 </button>
               ))}
             </div>
@@ -257,7 +450,7 @@ function ProductModal({ product, onClose, onAddToCart }) {
           <div className="pm-field">
             <span className="pm-label">Size</span>
             <div className="pm-options">
-              {SIZES.map((s) => (
+              {availableSizes.map((s) => (
                 <button
                   key={s}
                   className={`pm-chip ${size === s ? "active" : ""}`}
@@ -272,7 +465,7 @@ function ProductModal({ product, onClose, onAddToCart }) {
           <div className="pm-field">
             <span className="pm-label">Color — {color}</span>
             <div className="pm-options">
-              {product.colors.map((c) => (
+              {availableColors.map((c) => (
                 <button
                   key={c.name}
                   className={`pm-swatch ${color === c.name ? "active" : ""}`}
@@ -478,10 +671,11 @@ export default function App() {
   const [orderBanner, setOrderBanner] = useState(null);
 
   useEffect(() => {
-    if (!SHEET_CSV_URL) return;
-    fetch(SHEET_CSV_URL)
+    const targetUrl = normalizeGoogleSheetUrl(SHEET_CSV_URL);
+    if (!targetUrl) return;
+    fetch(targetUrl)
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch products from Google Sheet");
+        if (!res.ok) throw new Error(`Failed to fetch products: HTTP ${res.status}`);
         return res.text();
       })
       .then((csvText) => {
