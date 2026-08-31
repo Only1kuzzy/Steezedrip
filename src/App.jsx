@@ -619,6 +619,7 @@ function CheckoutModal({ cart, onClose, onBack }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const subtotalNGN = cart.reduce((s, i) => s + i.priceNGN * i.qty, 0);
   const subtotalUSD = cart.reduce((s, i) => s + i.priceUSD * i.qty, 0);
@@ -640,13 +641,26 @@ function CheckoutModal({ cart, onClose, onBack }) {
       "",
       `Subtotal: ${formatNGN(subtotalNGN)} (${formatUSD(subtotalUSD)})`,
       "",
-      `Name: ${name || "-"}`,
-      `Phone: ${phone || "-"}`,
-      `Delivery address: ${address || "-"}`,
+      `Name: ${name.trim() || "-"}`,
+      `Phone: ${phone.trim() || "-"}`,
+      `Delivery address: ${address.trim() || "-"}`,
     ].join("\n");
   };
 
-  const canSubmit = name.trim() && phone.trim();
+  const handleSend = (e) => {
+    if (!name.trim()) {
+      e.preventDefault();
+      setErrorMsg("Please enter your name to proceed.");
+      return;
+    }
+    if (!phone.trim()) {
+      e.preventDefault();
+      setErrorMsg("Please enter your phone or WhatsApp number.");
+      return;
+    }
+    setErrorMsg("");
+    onClose();
+  };
 
   return (
     <div className="overlay-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
@@ -671,18 +685,39 @@ function CheckoutModal({ cart, onClose, onBack }) {
 
           <div className="pm-field">
             <span className="pm-label">Your Details</span>
-            <input className="ck-input" placeholder="Full name *" value={name} onChange={(e) => setName(e.target.value)} />
-            <input className="ck-input" placeholder="Phone / WhatsApp number *" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <input
+              className="ck-input"
+              placeholder="Full name *"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (errorMsg) setErrorMsg("");
+              }}
+            />
+            <input
+              className="ck-input"
+              placeholder="Phone / WhatsApp number *"
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                if (errorMsg) setErrorMsg("");
+              }}
+            />
             <textarea className="ck-input" placeholder="Delivery address" rows={2} value={address} onChange={(e) => setAddress(e.target.value)} />
+            {errorMsg && (
+              <p style={{ color: "#d9534f", fontSize: "13px", margin: "6px 0 0", fontWeight: "600" }}>
+                {errorMsg}
+              </p>
+            )}
           </div>
 
           <div className="pm-actions">
             <a
               className="btn btn-wa"
-              style={{ width: "100%", justifyContent: "center", opacity: canSubmit ? 1 : 0.5, pointerEvents: canSubmit ? "auto" : "none" }}
+              style={{ width: "100%", justifyContent: "center" }}
               href={waLink(buildMessage())}
               target="_blank" rel="noopener noreferrer"
-              onClick={onClose}
+              onClick={handleSend}
             >
               Send Order On WhatsApp
             </a>
@@ -1665,38 +1700,34 @@ export default function App() {
               </button>
             </div>
 
-            <div className="products-grid">
-              {collection.slice(0, 3).map((product) => (
-                <TiltCard key={product.id} className="p-card" strength={6}>
-                  <div className="p-media" onClick={() => openProduct(product)}>
-                    {product.tag && <span className="p-badge">{product.tag}</span>}
-                    <img
-                      src={product.img}
-                      alt={product.name}
-                      style={{ objectPosition: product.pos || "center 20%" }}
-                      loading="lazy"
-                    />
-                    <button
-                      className="p-quick"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openProduct(product);
-                      }}
-                    >
-                      Quick View
-                    </button>
-                  </div>
-                  <div className="p-body">
-                    <span className="p-cat">{product.cat}</span>
-                    <h3 className="p-name" onClick={() => openProduct(product)}>
-                      {product.name}
-                    </h3>
-                    <div className="p-price-row">
-                      <span className="p-ngn">{product.priceN}</span>
-                      <span className="p-usd">{product.priceD}</span>
+            <div className="collection-grid">
+              {collection.slice(0, 3).map((item) => (
+                <Reveal key={item.id || item.name}>
+                  <TiltCard>
+                    <div className="product-card" onClick={() => openProduct(item)} role="button" tabIndex={0}>
+                      <div className="swatch">
+                        {item.tag && <span className="card-tag">{item.tag}</span>}
+                        <img src={item.img} alt={item.name} style={{ objectPosition: item.pos }} />
+                        <div className="swatch-view">
+                          <button
+                            className="quick-view-btn"
+                            onClick={(e) => { e.stopPropagation(); openProduct(item); }}
+                            aria-label={`Quick view ${item.name}`}
+                          >
+                            ⚡ Quick View
+                          </button>
+                          <span className="quick-view-label">Pick size &amp; quantity</span>
+                        </div>
+                      </div>
+                      <span className="product-cat">{item.cat}</span>
+                      <h3 className="product-name">{item.name}</h3>
+                      <div className="price-row">
+                        <span className="primary">{item.priceN}</span>
+                        <span className="secondary">{item.priceD}</span>
+                      </div>
                     </div>
-                  </div>
-                </TiltCard>
+                  </TiltCard>
+                </Reveal>
               ))}
             </div>
           </section>
@@ -1828,31 +1859,6 @@ export default function App() {
           ))}
         </div>
       </section>
-
-      {/* ---------------- PRODUCT / CART / CHECKOUT OVERLAYS ---------------- */}
-      {selectedProduct && (
-        <ProductModal
-          product={selectedProduct}
-          onClose={() => setSelectedProduct(null)}
-          onAddToCart={addToCart}
-        />
-      )}
-      {cartOpen && !checkoutOpen && (
-        <CartDrawer
-          cart={cart}
-          onClose={() => setCartOpen(false)}
-          onUpdateQty={updateCartQty}
-          onRemove={removeFromCart}
-          onCheckout={() => setCheckoutOpen(true)}
-        />
-      )}
-      {checkoutOpen && (
-        <CheckoutModal
-          cart={cart}
-          onClose={() => { setCheckoutOpen(false); setCartOpen(false); }}
-          onBack={() => setCheckoutOpen(false)}
-        />
-      )}
 
       {/* ---------------- STORY ---------------- */}
       <section id="story" className="block">
@@ -1990,6 +1996,31 @@ export default function App() {
           <span>Lagos, Nigeria</span>
         </div>
       </footer>
+
+      {/* ---------------- GLOBAL PRODUCT / CART / CHECKOUT OVERLAYS ---------------- */}
+      {selectedProduct && (
+        <ProductModal
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          onAddToCart={addToCart}
+        />
+      )}
+      {cartOpen && !checkoutOpen && (
+        <CartDrawer
+          cart={cart}
+          onClose={() => setCartOpen(false)}
+          onUpdateQty={updateCartQty}
+          onRemove={removeFromCart}
+          onCheckout={() => setCheckoutOpen(true)}
+        />
+      )}
+      {checkoutOpen && (
+        <CheckoutModal
+          cart={cart}
+          onClose={() => { setCheckoutOpen(false); setCartOpen(false); }}
+          onBack={() => setCheckoutOpen(false)}
+        />
+      )}
 
       {/* ---------------- FLOATING WHATSAPP ---------------- */}
       <a
