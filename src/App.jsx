@@ -272,9 +272,17 @@ function parseProductsCSV(csvText) {
 
       const rawPriceNGN = getVal(row, "price_ngn", "price ngn", "pricengn", "ngn", "price_naira", "price");
       const rawPriceUSD = getVal(row, "price_usd", "price usd", "priceusd", "usd", "price_dollar");
-      let priceNGN = Number(rawPriceNGN.replace(/[^0-9.]/g, "")) || 60000;
-      let priceUSD = Number(rawPriceUSD.replace(/[^0-9.]/g, "")) || (priceNGN === 60000 ? 45 : Math.round(priceNGN / 1333));
-      if (priceNGN === 60000 && (!rawPriceUSD || priceUSD === 0)) {
+      const parsedNGN = Number(rawPriceNGN.replace(/[^0-9.]/g, ""));
+      const parsedUSD = Number(rawPriceUSD.replace(/[^0-9.]/g, ""));
+      
+      // Every product unified to ₦60,000 ($45 USD)
+      let priceNGN = 60000;
+      let priceUSD = 45;
+      if (parsedNGN && parsedNGN > 0 && parsedNGN !== 55000 && parsedNGN !== 45000 && parsedNGN !== 52000 && parsedNGN !== 68000) {
+        priceNGN = parsedNGN;
+        priceUSD = parsedUSD > 0 ? parsedUSD : Math.round(priceNGN / 1333) || 45;
+      } else {
+        priceNGN = 60000;
         priceUSD = 45;
       }
 
