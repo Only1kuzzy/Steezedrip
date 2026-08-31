@@ -135,6 +135,16 @@ const SHEET_CSV_URL =
   import.meta.env.VITE_SHEET_CSV_URL ||
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlEob4aogBcgKV9SMLFpckYkd9N8jKi3QIrwNOVlngIdqAdbax6GsM3JBg_yGARDiWU16YUuHuV8Lv/pub?gid=853100014&single=true&output=csv";
 
+// Known Imgur album-to-image mappings for existing drops
+const IMGUR_ALBUM_MAP = {
+  "zlkNkNt": "https://i.imgur.com/m3hnO9M.jpeg",
+  "yWVEfew": "https://i.imgur.com/Y0yAOPh.jpeg",
+  "7XnCVXe": "https://i.imgur.com/YiEDcaS.jpeg",
+  "L9S32iD": "https://i.imgur.com/HNY9ASh.jpeg",
+  "hLrvHKo": "https://i.imgur.com/CPXLwr1.jpeg",
+  "TFO9A6u": "https://i.imgur.com/5f5I9SQ.jpeg",
+};
+
 function normalizeImgUrl(url) {
   if (!url || typeof url !== "string") return "";
   let clean = url.trim();
@@ -146,10 +156,13 @@ function normalizeImgUrl(url) {
   ) {
     return "";
   }
-  // Convert imgur album/post links like https://imgur.com/a/zlkNkNt to direct image https://i.imgur.com/zlkNkNt.jpg
-  const imgurAlbumMatch = clean.match(/imgur\.com\/(?:a|gallery)\/([a-zA-Z0-9]+)/i);
-  if (imgurAlbumMatch) {
-    return `https://i.imgur.com/${imgurAlbumMatch[1]}.jpg`;
+  // Check known album IDs first
+  const albumIdMatch = clean.match(/imgur\.com\/(?:a|gallery)\/([a-zA-Z0-9]+)/i);
+  if (albumIdMatch && IMGUR_ALBUM_MAP[albumIdMatch[1]]) {
+    return IMGUR_ALBUM_MAP[albumIdMatch[1]];
+  }
+  if (albumIdMatch) {
+    return `https://i.imgur.com/${albumIdMatch[1]}.jpg`;
   }
   const imgurDirectMatch = clean.match(/imgur\.com\/([a-zA-Z0-9]+)(?:\.[a-zA-Z0-9]+)?$/i);
   if (imgurDirectMatch && !clean.includes("/a/") && !clean.includes("/gallery/")) {
