@@ -1565,7 +1565,22 @@ export default function App() {
           <span style={{ transform: "rotate(-45deg) translate(4px,-4px)" }} />
         </button>
         {NAV_LINKS.map((l) => (
-          <a key={l.label} href={l.href} onClick={() => setMenuOpen(false)}>{l.label}</a>
+          <a
+            key={l.label}
+            href={l.href}
+            onClick={(e) => {
+              setMenuOpen(false);
+              if (is404) {
+                e.preventDefault();
+                navigateTo("/");
+                setTimeout(() => {
+                  document.querySelector(l.href)?.scrollIntoView({ behavior: "smooth" });
+                }, 120);
+              }
+            }}
+          >
+            {l.label}
+          </a>
         ))}
         <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle dark mode">
           <span className="icons">☀</span>
@@ -1932,7 +1947,18 @@ export default function App() {
       {/* ---------------- FOOTER ---------------- */}
       <footer>
         <div>
-          <a href="#top" className="wordmark">STEEZE<span>DRIP</span></a>
+          <a
+            href="/"
+            className="wordmark"
+            onClick={(e) => {
+              if (is404) {
+                e.preventDefault();
+                navigateTo("/");
+              }
+            }}
+          >
+            STEEZE<span>DRIP</span>
+          </a>
           <p className="footer-tag">
             Cut in Lagos. Worn everywhere. Small drops, no restocks, DM-only
             checkout.
@@ -1940,7 +1966,21 @@ export default function App() {
         </div>
         <div className="footer-links">
           {NAV_LINKS.map((l) => (
-            <a key={l.label} href={l.href}>{l.label}</a>
+            <a
+              key={l.label}
+              href={l.href}
+              onClick={(e) => {
+                if (is404) {
+                  e.preventDefault();
+                  navigateTo("/");
+                  setTimeout(() => {
+                    document.querySelector(l.href)?.scrollIntoView({ behavior: "smooth" });
+                  }, 120);
+                }
+              }}
+            >
+              {l.label}
+            </a>
           ))}
           <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a>
           <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer">TikTok</a>
