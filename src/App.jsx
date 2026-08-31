@@ -257,19 +257,18 @@ function parseProductsCSV(csvText) {
       const name = getVal(row, "name", "product_name", "title", "item");
       if (!name) continue;
 
-      // Skip template example rows or Danfo Hoodie
       const lowerName = name.toLowerCase();
-      if (
-        lowerName.includes("danfo hoodie") ||
-        (lowerName.includes("not average tee") && getVal(row, "image_url").toUpperCase().includes("PASTE YOUR"))
-      ) {
+      // Skip Danfo Hoodie
+      if (lowerName.includes("danfo hoodie")) {
         continue;
       }
 
-      const cat = getVal(row, "category", "cat", "type") || "Apparel";
+      const isNotAverage = lowerName.includes("not average");
+
+      const cat = getVal(row, "category", "cat", "type") || (isNotAverage ? "Graphic Tee" : "Apparel");
       const filterRaw = getVal(row, "filter", "collection", "tab", "category_filter").toLowerCase();
-      const category = filterRaw === "latest" || filterRaw === "bestseller" ? filterRaw : "all";
-      const tag = getVal(row, "badge", "tag", "label");
+      const category = isNotAverage ? "bestseller" : (filterRaw === "latest" || filterRaw === "bestseller" ? filterRaw : "all");
+      const tag = getVal(row, "badge", "tag", "label") || (isNotAverage ? "BESTSELLER" : "");
 
       const rawPriceNGN = getVal(row, "price_ngn", "price ngn", "pricengn", "ngn", "price_naira", "price");
       const rawPriceUSD = getVal(row, "price_usd", "price usd", "priceusd", "usd", "price_dollar");
@@ -279,7 +278,11 @@ function parseProductsCSV(csvText) {
         priceUSD = 45;
       }
 
-      const desc = getVal(row, "description", "desc", "details");
+      const desc =
+        getVal(row, "description", "desc", "details") ||
+        (isNotAverage
+          ? "Boxy, heavyweight cotton tee with an embroidered red patch that says exactly what it means. Relaxed drop shoulders, ribbed collar, made to be lived in."
+          : "");
 
       const rawColors = getVal(row, "colors", "color", "colour", "colours");
       let colors = ALL_COLORS;
@@ -309,14 +312,19 @@ function parseProductsCSV(csvText) {
       const rawImg2 = getVal(row, "image2_url", "image2url", "image2", "photo2");
       const label2 = getVal(row, "image2_label", "image2label", "label2") || "Back";
 
-      const img1 = normalizeImgUrl(rawImg1);
-      const img2 = normalizeImgUrl(rawImg2);
+      let img1 = normalizeImgUrl(rawImg1);
+      let img2 = normalizeImgUrl(rawImg2);
 
-      const mainImg = img1 || HERO_IMG;
+      if (isNotAverage) {
+        if (!img1) img1 = DETAIL_IMG;
+        if (!img2) img2 = NOT_AVERAGE_WORN_IMG;
+      }
+
+      const mainImg = img1 || (isNotAverage ? DETAIL_IMG : HERO_IMG);
       const images = [];
       if (img1) images.push({ src: img1, pos: "center 20%", label: label1 });
       if (img2) images.push({ src: img2, pos: "center 20%", label: label2 });
-      if (images.length === 0) images.push({ src: HERO_IMG, pos: "center 20%", label: "Front" });
+      if (images.length === 0) images.push({ src: mainImg, pos: "center 20%", label: "Front" });
 
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || `item-${r}`;
 
@@ -337,6 +345,10 @@ function parseProductsCSV(csvText) {
         colors,
         sizes: sizes.length ? sizes : SIZES,
       });
+    }
+    const hasNotAverage = products.some((p) => p.name.toLowerCase().includes("not average"));
+    if (!hasNotAverage) {
+      products.unshift(DEFAULT_COLLECTION[0]);
     }
     return products;
   } catch (e) {
