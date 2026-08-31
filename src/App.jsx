@@ -21,7 +21,6 @@ const NAV_LINKS = [
   { label: "The Drop", href: "#collection" },
   { label: "Our Steeze", href: "#story" },
   { label: "Lookbook", href: "#lookbook" },
-  { label: "WhatsApp", href: "#contact" },
 ];
 
 const STATS = [
@@ -764,6 +763,34 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleLogoClick = (e) => {
+    e.preventDefault();
+    if (is404) {
+      navigateTo("/");
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (window.location.hash) {
+        window.history.pushState({}, "", "/");
+      }
+    }
+  };
+
+  const handleNavClick = (e, href) => {
+    setMenuOpen(false);
+    if (is404) {
+      e.preventDefault();
+      navigateTo("/");
+      setTimeout(() => {
+        const el = document.querySelector(href);
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }, 120);
+    } else if (href && href.startsWith("#")) {
+      e.preventDefault();
+      const el = document.querySelector(href);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   const is404 =
     currentPath !== "/" &&
     currentPath !== "/index.html" &&
@@ -915,13 +942,19 @@ export default function App() {
         }
 
         *{box-sizing:border-box;}
-        html,body{margin:0;padding:0;}
+        html,body{
+          margin:0;padding:0;
+          width:100%; max-width:100%;
+          overflow-x:hidden;
+          -webkit-overflow-scrolling:touch;
+        }
 
         .sd-root{
           background:var(--bg);
           color:var(--text);
           font-family:'Work Sans', sans-serif;
           min-height:100vh;
+          width:100%; max-width:100%;
           overflow-x:hidden;
           position:relative;
           transition:background 0.4s ease, color 0.4s ease;
@@ -961,21 +994,33 @@ export default function App() {
         .nav{
           position:fixed; top:0; left:0; right:0; z-index:60;
           display:flex; align-items:center; justify-content:space-between;
-          padding:22px clamp(20px,5vw,64px);
+          padding:clamp(14px, 3vw, 22px) clamp(16px, 5vw, 64px);
+          width:100%; max-width:100%;
           background:linear-gradient(to bottom, var(--nav-fade));
-          backdrop-filter:blur(3px);
+          backdrop-filter:blur(6px);
+          -webkit-backdrop-filter:blur(6px);
         }
         .wordmark{
           font-family:'Big Shoulders Display', sans-serif;
           font-weight:800;
-          font-size:22px;
+          font-size:clamp(20px, 4.5vw, 24px);
           letter-spacing:0.04em;
           text-transform:uppercase;
           color:var(--text);
+          cursor:pointer;
+          display:inline-flex;
+          align-items:center;
+          user-select:none;
+          transition:opacity 0.2s ease, transform 0.2s ease;
+          border:none;
+          background:none;
+          padding:4px 0;
         }
+        .wordmark:hover{opacity:0.85; transform:scale(1.02);}
+        .wordmark:active{transform:scale(0.98);}
         .wordmark span{color:var(--gold);}
         .nav-links{
-          display:flex; gap:30px; align-items:center;
+          display:flex; gap:28px; align-items:center;
         }
         .nav-links a{
           font-size:12px; letter-spacing:0.18em; text-transform:uppercase;
@@ -1012,7 +1057,7 @@ export default function App() {
         .sd-root[data-theme="dark"] .theme-toggle .knob{transform:translateX(20px);}
         .theme-toggle .icons{display:flex; gap:6px; font-size:11px; letter-spacing:0.1em; color:var(--text-dim); padding:0 6px;}
 
-        .burger{display:none; flex-direction:column; gap:5px; background:none; border:none; cursor:pointer; z-index:70;}
+        .burger{display:none; flex-direction:column; gap:5px; background:none; border:none; cursor:pointer; z-index:70; padding:6px;}
         .nav-right-mobile{display:none; align-items:center; gap:14px;}
 
         .order-banner{
@@ -1032,6 +1077,7 @@ export default function App() {
           position:fixed; inset:0; background:var(--bg); z-index:65;
           display:flex; flex-direction:column; align-items:center; justify-content:center;
           gap:26px; transform:translateY(-100%); transition:transform 0.45s ease;
+          padding:20px; width:100%; max-width:100%; box-sizing:border-box;
         }
         .mobile-panel.open{transform:translateY(0);}
         .mobile-panel a{font-family:'Big Shoulders Display'; font-size:32px; text-transform:uppercase; letter-spacing:0.03em; color:var(--text);}
@@ -1444,19 +1490,24 @@ export default function App() {
           .wa-fab .label{display:inline;}
         }
         @media (max-width: 980px){
-          .hero-grid{grid-template-columns:1fr;}
-          .hero-photo-wrap{order:-1; max-width:420px; margin:0 auto;}
-          .hero{padding-top:110px;}
+          .hero-grid{grid-template-columns:1fr; gap:36px;}
+          .hero-photo-wrap{order:-1; max-width:min(380px, 90vw); margin:0 auto;}
+          .hero{padding-top:100px; padding-bottom:40px;}
         }
         @media (max-width: 899px){
           .nav-links{display:none;}
           .nav-right-mobile{display:flex;}
           .burger{display:flex;}
-          .story-grid{grid-template-columns:1fr;}
+          .story-grid{grid-template-columns:1fr; gap:36px;}
         }
         @media (max-width: 560px){
-          .contact-wrap{flex-direction:column; align-items:flex-start;}
+          .contact-wrap{flex-direction:column; align-items:stretch;}
           .hero-tag{display:none;}
+          .hero-ctas{flex-direction:column; width:100%;}
+          .hero-ctas .btn{width:100%; justify-content:center;}
+          .notfound-actions{flex-direction:column; width:100%;}
+          .notfound-actions .btn{width:100%; justify-content:center;}
+          .footer-links{flex-direction:column; gap:16px;}
         }
 
         /* ---------- 404 NOT FOUND PAGE ---------- */
@@ -1526,12 +1577,8 @@ export default function App() {
         <a
           href="/"
           className="wordmark"
-          onClick={(e) => {
-            if (is404) {
-              e.preventDefault();
-              navigateTo("/");
-            }
-          }}
+          onClick={handleLogoClick}
+          aria-label="SteezeDrip Homepage"
         >
           STEEZE<span>DRIP</span>
         </a>
@@ -1540,15 +1587,7 @@ export default function App() {
             <a
               key={l.label}
               href={l.href}
-              onClick={(e) => {
-                if (is404) {
-                  e.preventDefault();
-                  navigateTo("/");
-                  setTimeout(() => {
-                    document.querySelector(l.href)?.scrollIntoView({ behavior: "smooth" });
-                  }, 120);
-                }
-              }}
+              onClick={(e) => handleNavClick(e, l.href)}
             >
               {l.label}
             </a>
@@ -1599,20 +1638,22 @@ export default function App() {
           <span style={{ opacity: 0 }} />
           <span style={{ transform: "rotate(-45deg) translate(4px,-4px)" }} />
         </button>
+        <a
+          href="/"
+          className="wordmark"
+          style={{ fontSize: "28px", marginBottom: "8px" }}
+          onClick={(e) => {
+            setMenuOpen(false);
+            handleLogoClick(e);
+          }}
+        >
+          STEEZE<span>DRIP</span>
+        </a>
         {NAV_LINKS.map((l) => (
           <a
             key={l.label}
             href={l.href}
-            onClick={(e) => {
-              setMenuOpen(false);
-              if (is404) {
-                e.preventDefault();
-                navigateTo("/");
-                setTimeout(() => {
-                  document.querySelector(l.href)?.scrollIntoView({ behavior: "smooth" });
-                }, 120);
-              }
-            }}
+            onClick={(e) => handleNavClick(e, l.href)}
           >
             {l.label}
           </a>
@@ -1956,12 +1997,8 @@ export default function App() {
           <a
             href="/"
             className="wordmark"
-            onClick={(e) => {
-              if (is404) {
-                e.preventDefault();
-                navigateTo("/");
-              }
-            }}
+            onClick={handleLogoClick}
+            aria-label="SteezeDrip Homepage"
           >
             STEEZE<span>DRIP</span>
           </a>
@@ -1975,15 +2012,7 @@ export default function App() {
             <a
               key={l.label}
               href={l.href}
-              onClick={(e) => {
-                if (is404) {
-                  e.preventDefault();
-                  navigateTo("/");
-                  setTimeout(() => {
-                    document.querySelector(l.href)?.scrollIntoView({ behavior: "smooth" });
-                  }, 120);
-                }
-              }}
+              onClick={(e) => handleNavClick(e, l.href)}
             >
               {l.label}
             </a>
