@@ -1,3 +1,4 @@
 name,category,filter,badge,price_ngn,price_usd,description,colors,sizes,image_url,image_label,image2_url,image2_label,active
-Not Average Tee,Graphic Tee,bestseller,BESTSELLER,45000,35,"Boxy, heavyweight cotton tee with an embroidered red patch that says exactly what it means.",,,PASTE YOUR IMGUR IMAGE LINK HERE,Front,,,TRUE
-Danfo Hoodie,Hoodie,latest,NEW,60000,46,"Example new product row — edit this or delete it and add your own.",Black,"S,M,L,XL,XXL",PASTE YOUR IMGUR IMAGE LINK HERE,Front,PASTE A SECOND IMGUR LINK HERE (optional),Back,TRUE
+2 FLY,Shirt,latest,NEW,60000,45,"LOVE GOD AND HAVE MONEY","BLACK,WHITE","S,M,L,XL,XXL",https://i.imgur.com/m3hnO9M.jpeg,FRONT,https://i.imgur.com/Y0yAOPh.jpeg,BACK,TRUE
+GOD'S PLAN,Shirt,latest,NEW,60000,45,"I'M PART OF GOD'S PLAN","BLACK,WHITE","S,M,L,XL,XXL",https://i.imgur.com/YiEDcaS.jpeg,FRONT,https://i.imgur.com/HNY9ASh.jpeg,BACK,TRUE
+NO RULES,Shirt,latest,NEW,60000,45,"NO RULES JUST STEEZE","BLACK,WHITE","S,M,L,XL,XXL",https://i.imgur.com/CPXLwr1.jpeg,FRONT,https://i.imgur.com/5f5I9SQ.jpeg,BACK,TRUE

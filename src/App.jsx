@@ -69,10 +69,10 @@ const DEFAULT_COLLECTION = [
     id: "not-average-tee",
     name: "Not Average Tee",
     cat: "Graphic Tee",
-    priceNGN: 45000,
-    priceUSD: 35,
-    priceN: "₦45,000",
-    priceD: "$35",
+    priceNGN: 60000,
+    priceUSD: 45,
+    priceN: "₦60,000",
+    priceD: "$45",
     tag: "BESTSELLER",
     category: "bestseller",
     img: DETAIL_IMG,
@@ -89,10 +89,10 @@ const DEFAULT_COLLECTION = [
     id: "steeze-tee",
     name: "Steeze. Tee",
     cat: "Back-Print Tee",
-    priceNGN: 52000,
-    priceUSD: 40,
-    priceN: "₦52,000",
-    priceD: "$40",
+    priceNGN: 60000,
+    priceUSD: 45,
+    priceN: "₦60,000",
+    priceD: "$45",
     tag: "NEW",
     category: "latest",
     img: HERO_IMG,
@@ -109,10 +109,10 @@ const DEFAULT_COLLECTION = [
     id: "steeze-varsity-09",
     name: "Steeze Varsity 09",
     cat: "Long Sleeve",
-    priceNGN: 68000,
-    priceUSD: 52,
-    priceN: "₦68,000",
-    priceD: "$52",
+    priceNGN: 60000,
+    priceUSD: 45,
+    priceN: "₦60,000",
+    priceD: "$45",
     tag: "LIMITED",
     category: "latest",
     img: VARSITY_IMG,
@@ -257,6 +257,15 @@ function parseProductsCSV(csvText) {
       const name = getVal(row, "name", "product_name", "title", "item");
       if (!name) continue;
 
+      // Skip template example rows or Danfo Hoodie
+      const lowerName = name.toLowerCase();
+      if (
+        lowerName.includes("danfo hoodie") ||
+        (lowerName.includes("not average tee") && getVal(row, "image_url").toUpperCase().includes("PASTE YOUR"))
+      ) {
+        continue;
+      }
+
       const cat = getVal(row, "category", "cat", "type") || "Apparel";
       const filterRaw = getVal(row, "filter", "collection", "tab", "category_filter").toLowerCase();
       const category = filterRaw === "latest" || filterRaw === "bestseller" ? filterRaw : "all";
@@ -264,8 +273,11 @@ function parseProductsCSV(csvText) {
 
       const rawPriceNGN = getVal(row, "price_ngn", "price ngn", "pricengn", "ngn", "price_naira", "price");
       const rawPriceUSD = getVal(row, "price_usd", "price usd", "priceusd", "usd", "price_dollar");
-      const priceNGN = Number(rawPriceNGN.replace(/[^0-9.]/g, "")) || 0;
-      const priceUSD = Number(rawPriceUSD.replace(/[^0-9.]/g, "")) || 0;
+      let priceNGN = Number(rawPriceNGN.replace(/[^0-9.]/g, "")) || 60000;
+      let priceUSD = Number(rawPriceUSD.replace(/[^0-9.]/g, "")) || (priceNGN === 60000 ? 45 : Math.round(priceNGN / 1333));
+      if (priceNGN === 60000 && (!rawPriceUSD || priceUSD === 0)) {
+        priceUSD = 45;
+      }
 
       const desc = getVal(row, "description", "desc", "details");
 
