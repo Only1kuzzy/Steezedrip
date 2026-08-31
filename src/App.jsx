@@ -349,9 +349,12 @@ const formatNGN = (n) => `₦${n.toLocaleString("en-NG")}`;
 const formatUSD = (n) => `$${n.toLocaleString("en-US")}`;
 
 const LOOKBOOK = [
-  { title: "Not Average × Steeze.", note: "THE DUO", img: HERO_IMG, pos: "center 15%", productId: "steeze-tee" },
-  { title: "Not Average", note: "DETAIL", img: DETAIL_IMG, pos: "center 20%", productId: "not-average-tee" },
-  { title: "Steeze Varsity", note: "STYLE 09", img: VARSITY_IMG, pos: "center 12%", productId: "steeze-varsity-09" },
+  { title: "2 FLY", note: "NEW DROP", img: "https://i.imgur.com/m3hnO9M.jpeg", pos: "center 20%", productId: "2-fly" },
+  { title: "GOD'S PLAN", note: "NEW DROP", img: "https://i.imgur.com/YiEDcaS.jpeg", pos: "center 20%", productId: "god-s-plan" },
+  { title: "NO RULES", note: "NEW DROP", img: "https://i.imgur.com/CPXLwr1.jpeg", pos: "center 20%", productId: "no-rules" },
+  { title: "Not Average Tee", note: "BESTSELLER", img: DETAIL_IMG, pos: "center 20%", productId: "not-average-tee" },
+  { title: "Steeze. Tee", note: "LATEST COLLECTION", img: HERO_IMG, pos: "center 15%", productId: "steeze-tee" },
+  { title: "Steeze Varsity 09", note: "LIMITED DROP", img: VARSITY_IMG, pos: "center 12%", productId: "steeze-varsity-09" },
 ];
 
 
@@ -1951,22 +1954,32 @@ export default function App() {
       {/* ---------------- LOOKBOOK ---------------- */}
       <section id="lookbook" className="block">
         <Reveal className="section-head">
-          <span className="eyebrow">Lookbook</span>
-          <h2 className="section-title">Shot On The Drop</h2>
+          <span className="eyebrow">Lookbook — Shot On The Drop</span>
+          <h2 className="section-title">New Collection &amp; Best Sellers</h2>
         </Reveal>
         <Reveal>
           <div className="lookbook-scroll">
-            {LOOKBOOK.map((f) => (
+            {(collection && collection.length > 0
+              ? collection.map((item) => ({
+                  title: item.name,
+                  note: item.tag || (item.category === "bestseller" ? "BESTSELLER" : "NEW DROP"),
+                  img: item.img || HERO_IMG,
+                  pos: item.pos || "center 20%",
+                  productId: item.id,
+                  product: item,
+                }))
+              : LOOKBOOK
+            ).map((f, idx) => (
               <div
                 className="look-frame"
-                key={f.title}
-                onClick={() => openProduct(f.productId)}
+                key={f.productId || f.title || idx}
+                onClick={() => openProduct(f.product || f.productId)}
                 role="button" tabIndex={0}
               >
-                <img src={f.img} alt={f.title} style={{ objectPosition: f.pos }} />
+                <img src={f.img} alt={f.title} style={{ objectPosition: f.pos }} loading="lazy" />
                 <div className="info">
-                  <div className="title">{f.title}</div>
                   <div className="note">{f.note}</div>
+                  <div className="title">{f.title}</div>
                 </div>
               </div>
             ))}
