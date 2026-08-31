@@ -711,6 +711,28 @@ export default function App() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
   const [orderBanner, setOrderBanner] = useState(null);
+  const [currentPath, setCurrentPath] = useState(
+    typeof window !== "undefined" ? window.location.pathname : "/"
+  );
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const navigateTo = (path) => {
+    window.history.pushState({}, "", path);
+    setCurrentPath(path);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const is404 =
+    currentPath !== "/" &&
+    currentPath !== "/index.html" &&
+    currentPath !== "";
 
   useEffect(() => {
     const targetUrl = normalizeGoogleSheetUrl(SHEET_CSV_URL);
@@ -1401,14 +1423,100 @@ export default function App() {
           .contact-wrap{flex-direction:column; align-items:flex-start;}
           .hero-tag{display:none;}
         }
+
+        /* ---------- 404 NOT FOUND PAGE ---------- */
+        .notfound-container{
+          position:relative;
+          z-index:2;
+          max-width:1240px;
+          margin:0 auto;
+          padding:0 clamp(20px, 5vw, 60px);
+        }
+        .notfound-hero{
+          min-height:64vh;
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          justify-content:center;
+          text-align:center;
+          padding:140px 20px 50px;
+        }
+        .notfound-code{
+          font-family:'Big Shoulders Display', sans-serif;
+          font-size:clamp(100px, 20vw, 210px);
+          font-weight:900;
+          line-height:0.85;
+          letter-spacing:0.04em;
+          color:var(--text);
+          margin:14px 0 6px;
+          text-shadow:0 12px 48px var(--gold-glow);
+          user-select:none;
+        }
+        .notfound-code span{
+          color:var(--gold);
+          display:inline-block;
+          animation:pulse-stick 2.5s ease-in-out infinite;
+        }
+        .notfound-title{
+          font-family:'Big Shoulders Display', sans-serif;
+          font-size:clamp(32px, 5.5vw, 64px);
+          font-weight:800;
+          letter-spacing:0.08em;
+          text-transform:uppercase;
+          margin:10px 0 16px;
+          color:var(--text);
+        }
+        .notfound-desc{
+          max-width:540px;
+          font-size:clamp(15px, 1.8vw, 18px);
+          color:var(--text-dim);
+          line-height:1.65;
+          margin:0 auto 36px;
+        }
+        .notfound-actions{
+          display:flex;
+          flex-wrap:wrap;
+          gap:14px;
+          justify-content:center;
+          align-items:center;
+        }
+        .notfound-featured{
+          padding-top:20px;
+          padding-bottom:100px;
+        }
       `}</style>
 
       {/* ---------------- NAV ---------------- */}
       <nav className="nav">
-        <a href="#top" className="wordmark">STEEZE<span>DRIP</span></a>
+        <a
+          href="/"
+          className="wordmark"
+          onClick={(e) => {
+            if (is404) {
+              e.preventDefault();
+              navigateTo("/");
+            }
+          }}
+        >
+          STEEZE<span>DRIP</span>
+        </a>
         <div className="nav-links">
           {NAV_LINKS.map((l) => (
-            <a key={l.label} href={l.href}>{l.label}</a>
+            <a
+              key={l.label}
+              href={l.href}
+              onClick={(e) => {
+                if (is404) {
+                  e.preventDefault();
+                  navigateTo("/");
+                  setTimeout(() => {
+                    document.querySelector(l.href)?.scrollIntoView({ behavior: "smooth" });
+                  }, 120);
+                }
+              }}
+            >
+              {l.label}
+            </a>
           ))}
           <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle dark mode">
             <span className="icons">☀</span>
@@ -1484,64 +1592,160 @@ export default function App() {
         </div>
       )}
 
-      {/* ---------------- HERO ---------------- */}
-      <section id="top" className="hero" ref={heroRef} onMouseMove={onHeroMove} onMouseLeave={onHeroLeave}>
-        <div className="hero-bg" />
-        <div className="hero-grid">
-          <div>
-            <div className="eyebrow-row">
+      {is404 ? (
+        /* ---------------- 404 CUSTOM VIEW ---------------- */
+        <main className="notfound-container">
+          <section className="notfound-hero">
+            <div className="eyebrow-row" style={{ justifyContent: "center" }}>
               <span className="rule" />
-              <span className="eyebrow">Lagos-Rooted · World-Bound</span>
+              <span className="eyebrow">Archive Exception // 404</span>
+              <span className="rule" />
             </div>
-            <h1 className="drip-heading">
-              <Letters text="STEEZEDRIP" />
-            </h1>
-            <p className="tagline">
-              <em>Steeze</em> is the swagger. <em>Drip</em> is the proof. Cut in small
-              batches, worn by those who already know.
+
+            <div className="notfound-code">
+              4<span>0</span>4
+            </div>
+
+            <h1 className="notfound-title">Lost In The Cut</h1>
+
+            <p className="notfound-desc">
+              The piece, drop, or page you’re trying to reach doesn't exist or has moved to our private archives.
             </p>
-            <div className="hero-ctas">
-              <a href="#collection" className="btn btn-gold">Shop The Drop</a>
+
+            <div className="notfound-actions">
+              <button className="btn btn-gold" onClick={() => navigateTo("/")}>
+                ← Back To The Drop
+              </button>
+              <button
+                className="btn btn-outline"
+                onClick={() => {
+                  navigateTo("/");
+                  setTimeout(() => {
+                    document.getElementById("collection")?.scrollIntoView({ behavior: "smooth" });
+                  }, 120);
+                }}
+              >
+                Browse Collection
+              </button>
               <a
                 className="btn btn-wa"
-                href={waLink("Hi SteezeDrip, I'd like to talk about placing an order.")}
-                target="_blank" rel="noopener noreferrer"
+                href={waLink("Hi SteezeDrip, I ran into a 404 page and need help finding a piece.")}
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 Chat On WhatsApp
               </a>
             </div>
-          </div>
+          </section>
 
-          <div className="hero-photo-wrap">
-            <div className="stack-card back" ref={backCardRef}>
-              <img src={VARSITY_IMG} alt="SteezeDrip Steeze Varsity 09 long sleeve" style={{ objectPosition: "center 12%" }} />
-              <div className="card-cap">Varsity 09</div>
-            </div>
-            <div className="stack-card mid" ref={midCardRef}>
-              <img src={DETAIL_IMG} alt="SteezeDrip Not Average tee patch detail" style={{ objectPosition: "center 20%" }} />
-              <div className="card-cap">Not Average</div>
-            </div>
-            <div className="stack-card front" ref={frontCardRef}>
-              <img src={HERO_IMG} alt="SteezeDrip Not Average and Steeze. tees, worn" style={{ objectPosition: "center 15%" }} />
-              <div className="card-cap">Steeze. — Drop 04</div>
+          {/* Featured collection cards */}
+          <section className="block notfound-featured">
+            <div className="section-head">
+              <div>
+                <span className="eyebrow">Don't Leave Empty-Handed</span>
+                <h2 className="section-title">Active Steeze In Stock</h2>
+              </div>
+              <button className="btn btn-outline" onClick={() => navigateTo("/")}>
+                View All Pieces ({collection.length})
+              </button>
             </div>
 
-            <div className="hero-tag">
-              <div className="hero-tag-inner">
-                <div className="face front">STEEZE.</div>
-                <div className="face back">DROP 04</div>
-                <div className="face right">SD</div>
-                <div className="face left">SD</div>
+            <div className="products-grid">
+              {collection.slice(0, 3).map((product) => (
+                <TiltCard key={product.id} className="p-card" strength={6}>
+                  <div className="p-media" onClick={() => openProduct(product)}>
+                    {product.tag && <span className="p-badge">{product.tag}</span>}
+                    <img
+                      src={product.img}
+                      alt={product.name}
+                      style={{ objectPosition: product.pos || "center 20%" }}
+                      loading="lazy"
+                    />
+                    <button
+                      className="p-quick"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openProduct(product);
+                      }}
+                    >
+                      Quick View
+                    </button>
+                  </div>
+                  <div className="p-body">
+                    <span className="p-cat">{product.cat}</span>
+                    <h3 className="p-name" onClick={() => openProduct(product)}>
+                      {product.name}
+                    </h3>
+                    <div className="p-price-row">
+                      <span className="p-ngn">{product.priceN}</span>
+                      <span className="p-usd">{product.priceD}</span>
+                    </div>
+                  </div>
+                </TiltCard>
+              ))}
+            </div>
+          </section>
+        </main>
+      ) : (
+        <>
+          {/* ---------------- HERO ---------------- */}
+          <section id="top" className="hero" ref={heroRef} onMouseMove={onHeroMove} onMouseLeave={onHeroLeave}>
+            <div className="hero-bg" />
+            <div className="hero-grid">
+              <div>
+                <div className="eyebrow-row">
+                  <span className="rule" />
+                  <span className="eyebrow">Lagos-Rooted · World-Bound</span>
+                </div>
+                <h1 className="drip-heading">
+                  <Letters text="STEEZEDRIP" />
+                </h1>
+                <p className="tagline">
+                  <em>Steeze</em> is the swagger. <em>Drip</em> is the proof. Cut in small
+                  batches, worn by those who already know.
+                </p>
+                <div className="hero-ctas">
+                  <a href="#collection" className="btn btn-gold">Shop The Drop</a>
+                  <a
+                    className="btn btn-wa"
+                    href={waLink("Hi SteezeDrip, I'd like to talk about placing an order.")}
+                    target="_blank" rel="noopener noreferrer"
+                  >
+                    Chat On WhatsApp
+                  </a>
+                </div>
+              </div>
+
+              <div className="hero-photo-wrap">
+                <div className="stack-card back" ref={backCardRef}>
+                  <img src={VARSITY_IMG} alt="SteezeDrip Steeze Varsity 09 long sleeve" style={{ objectPosition: "center 12%" }} />
+                  <div className="card-cap">Varsity 09</div>
+                </div>
+                <div className="stack-card mid" ref={midCardRef}>
+                  <img src={DETAIL_IMG} alt="SteezeDrip Not Average tee patch detail" style={{ objectPosition: "center 20%" }} />
+                  <div className="card-cap">Not Average</div>
+                </div>
+                <div className="stack-card front" ref={frontCardRef}>
+                  <img src={HERO_IMG} alt="SteezeDrip Not Average and Steeze. tees, worn" style={{ objectPosition: "center 15%" }} />
+                  <div className="card-cap">Steeze. — Drop 04</div>
+                </div>
+
+                <div className="hero-tag">
+                  <div className="hero-tag-inner">
+                    <div className="face front">STEEZE.</div>
+                    <div className="face back">DROP 04</div>
+                    <div className="face right">SD</div>
+                    <div className="face left">SD</div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <div className="scroll-cue">
-          <span className="stick" />
-          <span>SCROLL</span>
-        </div>
-      </section>
+            <div className="scroll-cue">
+              <span className="stick" />
+              <span>SCROLL</span>
+            </div>
+          </section>
 
       {/* ---------------- MARQUEE ---------------- */}
       <div className="marquee">
@@ -1722,6 +1926,8 @@ export default function App() {
           </a>
         </Reveal>
       </section>
+      </>
+      )}
 
       {/* ---------------- FOOTER ---------------- */}
       <footer>

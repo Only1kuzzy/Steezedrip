@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>404 — Lost In The Cut | SteezeDrip</title>
+    <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #0b0b0d;
+        --bg-soft: #141311;
+        --text: #ece6d8;
+        --text-dim: #b0a894;
+        --gold: #d99a2c;
+        --gold-soft: #ffb833;
+        --line: rgba(255, 255, 255, 0.12);
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        background-color: var(--bg);
+        color: var(--text);
+        font-family: 'Work Sans', sans-serif;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 40px 20px;
+      }
+      .brand {
+        font-family: 'Big Shoulders Display', sans-serif;
+        font-size: 28px;
+        font-weight: 900;
+        letter-spacing: 0.18em;
+        text-decoration: none;
+        color: var(--text);
+        margin-bottom: 24px;
+      }
+      .brand span { color: var(--gold); }
+      .badge {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--gold);
+        border: 1px solid var(--gold);
+        padding: 6px 14px;
+        border-radius: 2px;
+        margin-bottom: 16px;
+      }
+      .code {
+        font-family: 'Big Shoulders Display', sans-serif;
+        font-size: clamp(80px, 18vw, 160px);
+        font-weight: 900;
+        line-height: 0.85;
+        letter-spacing: 0.05em;
+        color: var(--text);
+        margin-bottom: 12px;
+      }
+      .code span { color: var(--gold); }
+      h1 {
+        font-family: 'Big Shoulders Display', sans-serif;
+        font-size: clamp(28px, 4.5vw, 44px);
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+      }
+      p {
+        max-width: 480px;
+        font-size: 15px;
+        line-height: 1.6;
+        color: var(--text-dim);
+        margin-bottom: 32px;
+      }
+      .actions {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 14px 28px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        text-decoration: none;
+        border-radius: 2px;
+        transition: transform 0.2s, background 0.2s;
+      }
+      .btn-gold { background: var(--gold); color: #0b0b0d; }
+      .btn-gold:hover { background: var(--gold-soft); transform: translateY(-2px); }
+      .btn-outline { border: 1px solid var(--line); color: var(--text); }
+      .btn-outline:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-2px); }
+    </style>
+  </head>
+  <body>
+    <a href="/" class="brand">STEEZE<span>DRIP</span></a>
+    <div class="badge">Archive Exception // 404</div>
+    <div class="code">4<span>0</span>4</div>
+    <h1>Lost In The Cut</h1>
+    <p>The piece or page you're searching for is not in the active drop or has moved into the archives.</p>
+    <div class="actions">
+      <a href="/" class="btn btn-gold">Back To The Drop</a>
+      <a href="https://wa.me/2348110092995?text=Hi%20SteezeDrip%2C%20I%20got%20a%20404%20error%20and%20need%20help." target="_blank" rel="noopener noreferrer" class="btn btn-outline">WhatsApp Us</a>
+    </div>
+  </body>
+</html>
