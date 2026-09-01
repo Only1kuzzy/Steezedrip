@@ -463,6 +463,28 @@ function TiltCard({ children, className = "", strength = 8 }) {
   );
 }
 
+/* ---------- toast notification ---------- */
+
+function Toast({ toast, onClose }) {
+  if (!toast) return null;
+  return (
+    <div className={`sd-toast ${toast.type || "success"}`}>
+      <div className="sd-toast-icon">
+        {toast.type === "error" ? "⚠️" : "✓"}
+      </div>
+      <div className="sd-toast-body">
+        <div className="sd-toast-msg">{toast.msg}</div>
+      </div>
+      {toast.actionLabel && (
+        <button className="sd-toast-btn" onClick={toast.onAction}>
+          {toast.actionLabel}
+        </button>
+      )}
+      <button className="sd-toast-close" onClick={onClose} aria-label="Close">✕</button>
+    </div>
+  );
+}
+
 /* ---------- product modal ---------- */
 
 function ProductModal({ product, onClose, onAddToCart }) {
@@ -720,7 +742,7 @@ function CheckoutModal({ cart, onClose, onBack }) {
           <div className="pm-field">
             <span className="pm-label">Your Details</span>
             <input
-              className="ck-input"
+              className={`ck-input ${errorMsg && !name.trim() ? "has-error" : ""}`}
               placeholder="Full name *"
               value={name}
               onChange={(e) => {
@@ -729,7 +751,7 @@ function CheckoutModal({ cart, onClose, onBack }) {
               }}
             />
             <input
-              className="ck-input"
+              className={`ck-input ${errorMsg && !phone.trim() ? "has-error" : ""}`}
               placeholder="Phone / WhatsApp number *"
               value={phone}
               onChange={(e) => {
@@ -780,6 +802,16 @@ export default function App() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
   const [orderBanner, setOrderBanner] = useState(null);
+  const [toast, setToast] = useState(null);
+  const toastTimeoutRef = useRef(null);
+
+  const showToast = (toastObj) => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setToast(toastObj);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+    }, 3800);
+  };
   const [currentPath, setCurrentPath] = useState(
     typeof window !== "undefined" ? window.location.pathname : "/"
   );
@@ -830,6 +862,21 @@ export default function App() {
     currentPath !== "/" &&
     currentPath !== "/index.html" &&
     currentPath !== "";
+
+  // Dynamic Page Titles based on view & cart state
+  useEffect(() => {
+    if (is404) {
+      document.title = "404 — Lost In The Cut | SteezeDrip";
+    } else if (selectedProduct) {
+      document.title = `${selectedProduct.name} (₦60,000) — SteezeDrip`;
+    } else if (checkoutOpen) {
+      document.title = "Checkout — SteezeDrip";
+    } else if (cartOpen) {
+      document.title = `Your Bag (${cart.reduce((s, i) => s + i.qty, 0)}) — SteezeDrip`;
+    } else {
+      document.title = "SteezeDrip — Lagos-Rooted, World-Bound | Drop 04";
+    }
+  }, [is404, selectedProduct, checkoutOpen, cartOpen, cart]);
 
   useEffect(() => {
     const targetUrl = normalizeGoogleSheetUrl(SHEET_CSV_URL);
@@ -894,6 +941,16 @@ export default function App() {
           pos: product.pos,
         },
       ];
+    });
+    showToast({
+      type: "success",
+      msg: `Added ${qty}× ${product.name} (${size}) to your bag!`,
+      actionLabel: "View Bag",
+      onAction: () => {
+        setToast(null);
+        setSelectedProduct(null);
+        setCartOpen(true);
+      },
     });
   };
 
@@ -1601,9 +1658,73 @@ export default function App() {
           justify-content:center;
           align-items:center;
         }
-        .notfound-featured{
-          padding-top:20px;
-          padding-bottom:100px;
+        /* ---------- TOAST ALERTS ---------- */
+        .sd-toast{
+          position:fixed;
+          top:clamp(16px, 4vw, 26px);
+          left:50%;
+          transform:translateX(-50%);
+          z-index:150;
+          display:flex;
+          align-items:center;
+          gap:12px;
+          padding:12px 18px;
+          border-radius:4px;
+          box-shadow:0 12px 32px rgba(0,0,0,0.35);
+          font-size:13px;
+          font-weight:600;
+          animation:toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+          max-width:min(480px, 92vw);
+          backdrop-filter:blur(8px);
+          -webkit-backdrop-filter:blur(8px);
+        }
+        @keyframes toastSlideIn{
+          from{ opacity:0; transform:translate(-50%, -20px); }
+          to{ opacity:1; transform:translate(-50%, 0); }
+        }
+        .sd-toast.success{
+          background:var(--panel);
+          color:var(--text);
+          border:1px solid var(--gold);
+        }
+        .sd-toast.error{
+          background:#8a2b23;
+          color:#fff;
+          border:1px solid rgba(255,255,255,0.2);
+        }
+        .sd-toast-icon{
+          font-size:15px;
+          color:var(--gold);
+        }
+        .sd-toast.error .sd-toast-icon{ color:#fff; }
+        .sd-toast-msg{ flex:1; line-height:1.4; }
+        .sd-toast-btn{
+          background:var(--gold);
+          color:var(--bg);
+          border:none;
+          padding:6px 12px;
+          border-radius:2px;
+          font-size:11px;
+          font-weight:700;
+          text-transform:uppercase;
+          letter-spacing:0.08em;
+          cursor:pointer;
+          margin-left:4px;
+        }
+        .sd-toast-btn:hover{ opacity:0.9; }
+        .sd-toast-close{
+          background:none;
+          border:none;
+          color:var(--text-dim);
+          cursor:pointer;
+          font-size:14px;
+          padding:2px 4px;
+          line-height:1;
+        }
+        .sd-toast.error .sd-toast-close{ color:#fff; }
+        .ck-input.has-error{
+          border-color:#d9534f !important;
+          background:rgba(217,83,79,0.06) !important;
         }
       `}</style>
 
@@ -2048,8 +2169,7 @@ export default function App() {
             STEEZE<span>DRIP</span>
           </a>
           <p className="footer-tag">
-            Cut in Lagos. Worn everywhere. Small drops, no restocks, DM-only
-            checkout.
+            Cut in Lagos. Worn everywhere. Small drops, no restocks, DM-only checkout.
           </p>
         </div>
         <div className="footer-links">
@@ -2062,6 +2182,22 @@ export default function App() {
               {l.label}
             </a>
           ))}
+          <a
+            href="#top"
+            onClick={(e) => {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          >
+            Back To Top ↑
+          </a>
+          <a
+            href={waLink("Hi SteezeDrip, I'm reaching out from the website.")}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            WhatsApp DM
+          </a>
           <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a>
           <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer">TikTok</a>
         </div>
@@ -2070,6 +2206,9 @@ export default function App() {
           <span>Lagos, Nigeria</span>
         </div>
       </footer>
+
+      {/* ---------------- TOAST NOTIFICATION ---------------- */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
 
       {/* ---------------- GLOBAL PRODUCT / CART / CHECKOUT OVERLAYS ---------------- */}
       {selectedProduct && (

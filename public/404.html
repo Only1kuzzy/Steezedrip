@@ -2,8 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <title>404 — Lost In The Cut | SteezeDrip</title>
+    <meta name="description" content="The piece, drop, or page you are looking for has moved to the private archives or does not exist." />
+    <meta name="robots" content="noindex, follow" />
+    
     <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,12 +21,16 @@
         --gold-soft: #ffb833;
         --line: rgba(255, 255, 255, 0.12);
       }
-      * { box-sizing: border-box; margin: 0; padding: 0; }
+      *, *::before, *::after { box-sizing: border-box; }
       body {
         background-color: var(--bg);
         color: var(--text);
         font-family: 'Work Sans', sans-serif;
         min-height: 100vh;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        margin: 0;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -39,7 +46,9 @@
         text-decoration: none;
         color: var(--text);
         margin-bottom: 24px;
+        transition: opacity 0.2s;
       }
+      .brand:hover { opacity: 0.85; }
       .brand span { color: var(--gold); }
       .badge {
         display: inline-block;
