@@ -29,24 +29,43 @@
     <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
     <link rel="apple-touch-icon" href="/favicon.jpg" />
 
-    <!-- Structured Data (JSON-LD) for Google Rich Snippets -->
+    <!-- Structured Data (JSON-LD) for Google Rich Snippets & Local Business -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "ClothingStore",
+      "@type": ["ClothingStore", "LocalBusiness"],
       "name": "SteezeDrip",
+      "alternateName": "SteezeDrip Apparel",
       "url": "https://steezedrips.com",
       "logo": "https://steezedrips.com/favicon.jpg",
-      "description": "Small-batch streetwear-couture, cut in Lagos, worn everywhere. Exclusive drops, heavyweight cottons, hand-finished patches, no restocks.",
+      "image": "https://steezedrips.com/favicon.jpg",
+      "description": "Small-batch streetwear-couture, cut in Lagos, Nigeria, worn everywhere. Exclusive drops, heavyweight cottons, hand-finished patches, no restocks.",
       "telephone": "+2348110092995",
+      "email": "support@steezedrips.com",
       "priceRange": "₦₦",
       "currenciesAccepted": "NGN, USD",
       "paymentAccepted": "Credit Card, Debit Card, Bank Transfer, USSD, Paystack",
       "address": {
         "@type": "PostalAddress",
+        "streetAddress": "Lekki Phase 1",
         "addressLocality": "Lagos",
+        "addressRegion": "Lagos State",
+        "postalCode": "105102",
         "addressCountry": "NG"
       },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 6.4474,
+        "longitude": 3.4735
+      },
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+          "opens": "09:00",
+          "closes": "20:00"
+        }
+      ],
       "sameAs": [
         "https://instagram.com",
         "https://tiktok.com"
@@ -64,9 +83,32 @@
         overflow-x: hidden;
         -webkit-tap-highlight-color: transparent;
       }
+      .skip-link {
+        position: absolute;
+        top: -120px;
+        left: 20px;
+        background: #0b0b0d;
+        color: #f4ede4;
+        padding: 12px 22px;
+        z-index: 10000;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 13px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        border: 1px solid #d4a373;
+        border-radius: 6px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        transition: top 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .skip-link:focus {
+        top: 20px;
+        outline: 2px solid #d4a373;
+      }
     </style>
   </head>
   <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
     <div id="root" style="width: 100%; max-width: 100%; overflow-x: hidden;"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

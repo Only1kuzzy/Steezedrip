@@ -261,7 +261,7 @@ export default function AdminDashboard({ onClose, onProductCreated }) {
       if (data.success) {
         setFeedbackMsg({
           type: "success",
-          text: `✨ Drop "${name}" published successfully! Taking you to catalog...`,
+          text: `Drop "${name}" published successfully! Taking you to catalog...`,
         });
         // Reset form
         setName("");
@@ -318,7 +318,12 @@ export default function AdminDashboard({ onClose, onProductCreated }) {
         {!isAuthenticated ? (
           <div className="admin-auth-card">
             <div className="admin-auth-inner">
-              <span className="auth-lock-icon">🔒</span>
+              <span className="auth-lock-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </span>
               <h3>Admin Access Restricted</h3>
               <p>Enter the storemaster passkey to manage drops and view Paystack orders.</p>
               <form onSubmit={handleLogin} className="admin-auth-form">
@@ -345,26 +350,46 @@ export default function AdminDashboard({ onClose, onProductCreated }) {
               <button
                 className={`admin-tab ${activeTab === "upload" ? "active" : ""}`}
                 onClick={() => setActiveTab("upload")}
+                style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
               >
-                ➕ Upload Drop
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Upload Drop
               </button>
               <button
                 className={`admin-tab ${activeTab === "manage" ? "active" : ""}`}
                 onClick={() => setActiveTab("manage")}
+                style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
               >
-                🏷️ Manage Catalog
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                  <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                </svg>
+                Manage Catalog
               </button>
               <button
                 className={`admin-tab ${activeTab === "orders" ? "active" : ""}`}
                 onClick={() => setActiveTab("orders")}
+                style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
               >
-                💳 Paystack Orders
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                  <line x1="1" y1="10" x2="23" y2="10"></line>
+                </svg>
+                Paystack Orders
               </button>
               <button
                 className={`admin-tab ${activeTab === "settings" ? "active" : ""}`}
                 onClick={() => setActiveTab("settings")}
+                style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
               >
-                ⚙️ Status & DB
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                Status &amp; DB
               </button>
             </div>
 
@@ -578,7 +603,7 @@ export default function AdminDashboard({ onClose, onProductCreated }) {
                         className="btn btn-primary btn-lg"
                         style={{ width: "100%", justifyContent: "center", marginTop: "16px" }}
                       >
-                        {submitting ? "⏳ Uploading photo to Cloudinary & saving..." : "🚀 Publish Drop To Storefront"}
+                        {submitting ? "Uploading photo to Cloudinary & saving..." : "Publish Drop To Storefront"}
                       </button>
                     </div>
                   </form>
@@ -719,7 +744,13 @@ export default function AdminDashboard({ onClose, onProductCreated }) {
                   <p className="admin-hint">Loading customer orders...</p>
                 ) : orders.length === 0 ? (
                   <div className="admin-empty-state">
-                    <span style={{ fontSize: "36px" }}>📦</span>
+                    <span style={{ display: "inline-flex", color: "var(--accent)", marginBottom: "8px" }}>
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                      </svg>
+                    </span>
                     <h4>No Orders Placed Yet</h4>
                     <p>When customers check out via Paystack, their orders will populate here with verified payments.</p>
                   </div>
@@ -762,8 +793,12 @@ export default function AdminDashboard({ onClose, onProductCreated }) {
                                     target="_blank"
                                     rel="noreferrer"
                                     className="wa-customer-link"
+                                    style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
                                   >
-                                    💬 {ord.customer_phone}
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                                    </svg>
+                                    {ord.customer_phone}
                                   </a>
                                 ) : (
                                   "—"

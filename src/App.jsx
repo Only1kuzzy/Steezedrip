@@ -471,8 +471,18 @@ function Toast({ toast, onClose }) {
   if (!toast) return null;
   return (
     <div className={`sd-toast ${toast.type || "success"}`}>
-      <div className="sd-toast-icon">
-        {toast.type === "error" ? "⚠️" : "✓"}
+      <div className="sd-toast-icon" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {toast.type === "error" ? (
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        ) : (
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        )}
       </div>
       <div className="sd-toast-body">
         <div className="sd-toast-msg">{toast.msg}</div>
@@ -682,6 +692,7 @@ function CheckoutModal({ cart, onClose, onBack, onClearCart }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [orderReceipt, setOrderReceipt] = useState(null);
+  const [copiedRef, setCopiedRef] = useState(false);
 
   const subtotalNGN = cart.reduce((s, i) => s + i.priceNGN * i.qty, 0);
   const subtotalUSD = cart.reduce((s, i) => s + i.priceUSD * i.qty, 0);
@@ -797,14 +808,53 @@ function CheckoutModal({ cart, onClose, onBack, onClearCart }) {
         <div className="pm-card checkout" style={{ maxWidth: "520px" }}>
           <button className="pm-close" onClick={onClose} aria-label="Close">✕</button>
           <div className="pm-details" style={{ width: "100%", textAlign: "center", padding: "10px 0" }}>
-            <span style={{ fontSize: "48px", display: "block", marginBottom: "12px" }}>🎉</span>
+            <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "52px", height: "52px", borderRadius: "50%", background: "var(--gold-glow)", border: "1px solid var(--gold)", color: "var(--gold)", margin: "0 auto 12px auto" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </div>
             <span className="eyebrow">Payment Confirmed</span>
             <h3 className="pm-name" style={{ margin: "8px 0 16px" }}>Order Placed Successfully!</h3>
 
             <div className="checkout-summary" style={{ textAlign: "left", marginBottom: "20px" }}>
-              <div className="checkout-row">
+              <div className="checkout-row" style={{ alignItems: "center" }}>
                 <span>Order Reference</span>
-                <strong style={{ fontFamily: "monospace", color: "var(--gold)" }}>{orderReceipt.reference}</strong>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <strong style={{ fontFamily: "monospace", color: "var(--gold)", fontSize: "13px" }}>{orderReceipt.reference}</strong>
+                  <button
+                    type="button"
+                    className="btn-copy"
+                    onClick={() => {
+                      if (navigator.clipboard) {
+                        navigator.clipboard.writeText(orderReceipt.reference);
+                      }
+                      setCopiedRef(true);
+                      setTimeout(() => setCopiedRef(false), 2000);
+                    }}
+                    title="Copy reference code"
+                    style={{
+                      background: "var(--bg-soft)",
+                      border: "1px solid var(--line)",
+                      borderRadius: "4px",
+                      padding: "4px 8px",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      letterSpacing: "0.08em",
+                      cursor: "pointer",
+                      color: "var(--text)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px"
+                    }}
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    {copiedRef ? "COPIED" : "COPY"}
+                  </button>
+                </div>
               </div>
               <div className="checkout-row">
                 <span>Customer</span>
@@ -867,18 +917,25 @@ function CheckoutModal({ cart, onClose, onBack, onClearCart }) {
             <button
               type="button"
               className={`btn btn-sm ${paymentMethod === "paystack" ? "btn-primary" : "btn-outline"}`}
-              style={{ flex: 1, justifyContent: "center" }}
+              style={{ flex: 1, justifyContent: "center", display: "inline-flex", alignItems: "center", gap: "6px" }}
               onClick={() => setPaymentMethod("paystack")}
             >
-              💳 Pay Online (Paystack)
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+              Pay Online (Paystack)
             </button>
             <button
               type="button"
               className={`btn btn-sm ${paymentMethod === "whatsapp" ? "btn-primary" : "btn-outline"}`}
-              style={{ flex: 1, justifyContent: "center" }}
+              style={{ flex: 1, justifyContent: "center", display: "inline-flex", alignItems: "center", gap: "6px" }}
               onClick={() => setPaymentMethod("whatsapp")}
             >
-              💬 WhatsApp Order
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+              </svg>
+              WhatsApp Order
             </button>
           </div>
 
@@ -967,12 +1024,119 @@ function CheckoutModal({ cart, onClose, onBack, onClearCart }) {
   );
 }
 
+/* ---------- search modal ---------- */
+
+function SearchModal({ isOpen, onClose, collection, onSelectProduct }) {
+  const [query, setQuery] = useState("");
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    } else {
+      setQuery("");
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleKey = (e) => e.key === "Escape" && onClose();
+    if (isOpen) window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const q = query.toLowerCase().trim();
+  const results = q
+    ? collection.filter(
+        (p) =>
+          (p.name && p.name.toLowerCase().includes(q)) ||
+          (p.cat && p.cat.toLowerCase().includes(q)) ||
+          (p.desc && p.desc.toLowerCase().includes(q)) ||
+          (p.tag && p.tag.toLowerCase().includes(q))
+      )
+    : collection.slice(0, 6);
+
+  return (
+    <div className="overlay-scrim" style={{ zIndex: 190 }} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="search-modal">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span className="eyebrow">Search The Steeze Archive</span>
+          <button className="pm-close" style={{ position: "static" }} onClick={onClose} aria-label="Close search">✕</button>
+        </div>
+        <div className="search-input-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            ref={inputRef}
+            type="text"
+            className="search-input"
+            placeholder="Type drop name, category, or fabric..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          {query && (
+            <button className="search-clear-btn" onClick={() => setQuery("")}>✕</button>
+          )}
+        </div>
+
+        <div className="search-results-list">
+          <div style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--text-dim)", marginBottom: "4px" }}>
+            {query ? `Found ${results.length} results` : "Trending Drops"}
+          </div>
+          {results.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "32px 10px", color: "var(--text-dim)", fontSize: "14px" }}>
+              No pieces match your search.
+            </div>
+          ) : (
+            results.map((item) => (
+              <div
+                key={item.id || item.name}
+                className="search-result-item"
+                onClick={() => {
+                  onSelectProduct(item);
+                  onClose();
+                }}
+              >
+                <img src={item.img} alt={item.name} className="search-result-thumb" />
+                <div className="search-result-details">
+                  <h4 className="search-result-title">{item.name}</h4>
+                  <span style={{ fontSize: "12px", color: "var(--text-dim)" }}>{item.cat} · {item.tag || "Drop 04"}</span>
+                </div>
+                <span className="search-result-price">{item.priceN || (item.priceNGN ? formatNGN(item.priceNGN) : "₦60,000")}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- main ---------- */
 
 export default function App() {
   const [collection, setCollection] = useState(DEFAULT_COLLECTION);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [theme, setTheme] = useState("light"); // "light" first, switchable to "dark"
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("steezedrip_theme") || "light";
+    }
+    return "light";
+  });
+  const [cookieConsent, setCookieConsent] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("steezedrip_cookie_consent") === "true";
+    }
+    return false;
+  });
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [copiedPhone, setCopiedPhone] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -1108,6 +1272,7 @@ export default function App() {
             priceD: p.priceD || formatUSD(p.priceUSD || 45),
           }));
           setCollection(mapped);
+          setLoadingProducts(false);
           return;
         }
         throw new Error("No products from backend, falling back to sheet");
@@ -1115,7 +1280,10 @@ export default function App() {
       .catch(() => {
         // 2. Fallback to Google Sheet CSV
         const targetUrl = normalizeGoogleSheetUrl(SHEET_CSV_URL);
-        if (!targetUrl) return;
+        if (!targetUrl) {
+          setLoadingProducts(false);
+          return;
+        }
         fetch(targetUrl)
           .then((res) => {
             if (!res.ok) throw new Error(`Failed to fetch products: HTTP ${res.status}`);
@@ -1129,6 +1297,9 @@ export default function App() {
           })
           .catch((err) => {
             console.warn("Could not load products from Google Sheet, using fallback:", err);
+          })
+          .finally(() => {
+            setLoadingProducts(false);
           });
       });
   }, []);
@@ -1233,7 +1404,45 @@ export default function App() {
     document.body.style.overflow = anyOverlayOpen ? "hidden" : "";
   }, [menuOpen, selectedProduct, cartOpen, checkoutOpen]);
 
-  const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 350);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme((t) => {
+      const next = t === "light" ? "dark" : "light";
+      if (typeof window !== "undefined") {
+        localStorage.setItem("steezedrip_theme", next);
+      }
+      return next;
+    });
+  };
+
+  const handleCopy = async (text, type = "phone") => {
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      if (type === "phone") {
+        setCopiedPhone(true);
+        setTimeout(() => setCopiedPhone(false), 2000);
+      }
+      showToast({ type: "success", msg: "Copied to clipboard" });
+    } catch {
+      showToast({ type: "error", msg: "Failed to copy to clipboard" });
+    }
+  };
 
   return (
     <div className="sd-root" data-theme={theme}>
@@ -2435,6 +2644,278 @@ export default function App() {
           color: var(--gold-soft);
           margin: 16px 0 6px;
         }
+
+        /* ---------- COOKIE BANNER ---------- */
+        .cookie-banner {
+          position: fixed;
+          bottom: 24px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: calc(100% - 32px);
+          max-width: 640px;
+          background: var(--panel);
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          padding: 16px 20px;
+          box-shadow: 0 20px 48px rgba(0,0,0,0.28);
+          z-index: 120;
+          animation: adminFadeIn 0.35s ease;
+        }
+        .cookie-banner-content {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          justify-content: space-between;
+          flex-wrap: wrap;
+        }
+        .cookie-banner-text {
+          font-size: 13px;
+          line-height: 1.5;
+          color: var(--text-dim);
+          margin: 0;
+        }
+        .cookie-banner-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        /* ---------- SCROLL TO TOP BUTTON ---------- */
+        .scroll-to-top-btn {
+          position: fixed;
+          bottom: 28px;
+          right: 28px;
+          width: 46px;
+          height: 46px;
+          border-radius: 50%;
+          background: var(--panel);
+          color: var(--text);
+          border: 1px solid var(--line);
+          box-shadow: 0 10px 28px rgba(0,0,0,0.20);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          z-index: 95;
+          transition: transform 0.25s ease, background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+          animation: adminFadeIn 0.25s ease;
+        }
+        .scroll-to-top-btn:hover {
+          background: var(--gold);
+          color: #000;
+          transform: translateY(-4px);
+          box-shadow: 0 16px 36px rgba(0,0,0,0.3);
+        }
+
+        /* ---------- SEARCH OVERLAY & BAR ---------- */
+        .nav-search-btn {
+          background: none;
+          border: 1px solid var(--line);
+          color: var(--text);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 6px;
+          border-radius: 50%;
+          transition: all 0.2s ease;
+        }
+        .nav-search-btn:hover {
+          background: var(--bg-soft);
+          border-color: var(--gold);
+          color: var(--gold);
+        }
+        .search-modal {
+          max-width: 580px;
+          width: 100%;
+          background: var(--panel);
+          border: 1px solid var(--line);
+          border-radius: 16px;
+          padding: 24px;
+          box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+          animation: adminFadeIn 0.25s ease;
+        }
+        .search-input-wrap {
+          position: relative;
+          display: flex;
+          align-items: center;
+          width: 100%;
+          margin: 14px 0 18px;
+        }
+        .search-input-wrap svg {
+          position: absolute;
+          left: 14px;
+          color: var(--gold);
+          pointer-events: none;
+        }
+        .search-input {
+          width: 100%;
+          padding: 12px 40px;
+          background: var(--bg-soft);
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          font-family: 'Work Sans', sans-serif;
+          font-size: 14px;
+          color: var(--text);
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        .search-input:focus {
+          border-color: var(--gold);
+        }
+        .search-clear-btn {
+          position: absolute;
+          right: 12px;
+          background: none;
+          border: none;
+          color: var(--text-dim);
+          cursor: pointer;
+          font-size: 14px;
+        }
+        .search-results-list {
+          max-height: 52vh;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .search-result-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 12px;
+          border-radius: 6px;
+          background: var(--bg-soft);
+          cursor: pointer;
+          transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+          border: 1px solid transparent;
+        }
+        .search-result-item:hover {
+          background: var(--panel);
+          border-color: var(--gold);
+          transform: translateX(3px);
+        }
+        .search-result-thumb {
+          width: 44px;
+          height: 44px;
+          border-radius: 4px;
+          object-fit: cover;
+        }
+        .search-result-details {
+          flex: 1;
+        }
+        .search-result-title {
+          font-family: 'Big Shoulders Display', sans-serif;
+          font-size: 17px;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+          color: var(--text);
+          margin: 0 0 2px 0;
+        }
+        .search-result-price {
+          font-size: 12px;
+          color: var(--gold);
+          font-weight: 700;
+        }
+
+        /* ---------- SKELETON LOADERS ---------- */
+        @keyframes sdShimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .skeleton-card {
+          background: var(--panel);
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          padding: 14px;
+        }
+        .skeleton-box {
+          width: 100%;
+          background: linear-gradient(90deg, var(--bg-soft) 25%, var(--panel) 50%, var(--bg-soft) 75%);
+          background-size: 200% 100%;
+          animation: sdShimmer 1.8s infinite;
+          border-radius: 4px;
+        }
+        .skeleton-img {
+          height: 340px;
+          margin-bottom: 12px;
+        }
+        .skeleton-line-sm {
+          height: 12px;
+          width: 35%;
+          margin-bottom: 8px;
+        }
+        .skeleton-line-md {
+          height: 18px;
+          width: 70%;
+          margin-bottom: 10px;
+        }
+        .skeleton-line-lg {
+          height: 14px;
+          width: 45%;
+        }
+
+        /* ---------- HOVER MICRO-INTERACTIONS ---------- */
+        .product-card {
+          transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+        }
+        .product-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 16px 36px rgba(0,0,0,0.14);
+        }
+        .product-card:hover .swatch img {
+          transform: scale(1.04);
+        }
+        .swatch img {
+          transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .look-frame {
+          transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+        }
+        .look-frame:hover {
+          transform: scale(1.02);
+          box-shadow: 0 14px 34px rgba(0,0,0,0.22);
+        }
+        .look-frame:hover img {
+          transform: scale(1.05);
+        }
+        .look-frame img {
+          transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .btn-copy {
+          transition: all 0.2s ease;
+        }
+        .btn-copy:hover {
+          background: var(--text) !important;
+          color: var(--bg) !important;
+        }
+        .nav-links a {
+          position: relative;
+          transition: color 0.2s ease;
+        }
+        .nav-links a::after {
+          content: '';
+          position: absolute;
+          bottom: -4px;
+          left: 0;
+          width: 0;
+          height: 1.5px;
+          background: var(--gold);
+          transition: width 0.25s ease;
+        }
+        .nav-links a:hover::after {
+          width: 100%;
+        }
+        .filter-tab {
+          transition: all 0.25s ease;
+        }
+        .filter-tab:hover {
+          border-color: var(--gold);
+          color: var(--gold);
+        }
       `}</style>
 
       {/* ---------------- NAV ---------------- */}
@@ -2457,10 +2938,37 @@ export default function App() {
               {l.label}
             </a>
           ))}
-          <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle dark mode">
-            <span className="icons">☀</span>
+          <button
+            className="nav-search-btn"
+            onClick={() => setSearchModalOpen(true)}
+            aria-label="Search catalog drops"
+            title="Search drops"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </button>
+          <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle dark mode" title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
+            <span className="icons">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+            </span>
             <span className="track"><span className="knob" /></span>
-            <span className="icons">☾</span>
+            <span className="icons">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </span>
           </button>
           <button className="cart-btn" onClick={() => setCartOpen(true)} aria-label="Open cart">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -2479,6 +2987,16 @@ export default function App() {
           </a>
         </div>
         <div className="nav-right-mobile">
+          <button
+            className="nav-search-btn"
+            onClick={() => setSearchModalOpen(true)}
+            aria-label="Search catalog drops"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </button>
           <button className="cart-btn" onClick={() => setCartOpen(true)} aria-label="Open cart">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path d="M6 7h15l-1.5 9.5a2 2 0 0 1-2 1.7H8.7a2 2 0 0 1-2-1.7L5 4H2" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
@@ -2523,11 +3041,52 @@ export default function App() {
             {l.label}
           </a>
         ))}
-        <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle dark mode">
-          <span className="icons">☀</span>
-          <span className="track"><span className="knob" /></span>
-          <span className="icons">☾</span>
+        <button
+          className="btn btn-outline btn-sm"
+          style={{ width: "200px", justifyContent: "center", gap: "8px" }}
+          onClick={() => {
+            setMenuOpen(false);
+            setSearchModalOpen(true);
+          }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          Search Drops
         </button>
+        <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle dark mode">
+          <span className="icons">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          </span>
+          <span className="track"><span className="knob" /></span>
+          <span className="icons">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </span>
+        </button>
+        <a
+          href="#shipping"
+          onClick={(e) => {
+            e.preventDefault();
+            setMenuOpen(false);
+            setLegalTab("shipping");
+          }}
+          style={{ fontSize: "16px", letterSpacing: "0.08em", color: "var(--text-dim)", textTransform: "uppercase" }}
+        >
+          Brand Policies
+        </a>
         <a
           className="btn btn-wa"
           href={waLink("Hi SteezeDrip, I'd like to know more about the current drop.")}
@@ -2619,8 +3178,13 @@ export default function App() {
                             className="quick-view-btn"
                             onClick={(e) => { e.stopPropagation(); openProduct(item); }}
                             aria-label={`Quick view ${item.name}`}
+                            style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
                           >
-                            ⚡ Quick View
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                              <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            Quick View
                           </button>
                           <span className="quick-view-label">Pick size &amp; quantity</span>
                         </div>
@@ -2718,11 +3282,53 @@ export default function App() {
       </div>
 
       {/* ---------------- COLLECTION ---------------- */}
+      <div id="main-content" tabIndex="-1" style={{ outline: "none" }} />
       <section id="collection" className="block">
         <Reveal className="section-head">
           <span className="eyebrow">Drop 04 — Steeze. Edit</span>
           <h2 className="section-title">This Season's Fits</h2>
         </Reveal>
+
+        {/* Live Search Bar */}
+        <div className="search-bar-row" style={{ maxWidth: "560px", margin: "0 auto 20px auto", padding: "0 16px" }}>
+          <div className="search-input-wrap" style={{ margin: 0 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search drops by name, category, or fabric (e.g. Average, Varsity, Cargo)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search collection drops"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="search-clear-btn"
+                onClick={() => setSearchQuery("")}
+                aria-label="Clear search query"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px", fontSize: "12px", color: "var(--text-dim)" }}>
+              <span>Filtering drops by: "{searchQuery}"</span>
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                style={{ background: "none", border: "none", color: "var(--gold)", cursor: "pointer", fontSize: "12px", fontWeight: 700 }}
+              >
+                Clear Search
+              </button>
+            </div>
+          )}
+        </div>
+
         <Reveal className="filter-tabs">
           {FILTERS.map((f) => (
             <button
@@ -2735,38 +3341,87 @@ export default function App() {
           ))}
         </Reveal>
         <div className="collection-grid">
-          {collection.filter((item) => activeFilter === "all" || item.category === activeFilter).map((item) => (
-            <Reveal key={item.id || item.name}>
-              <TiltCard>
-                <div className="product-card" onClick={() => openProduct(item)} role="button" tabIndex={0}>
-                  <div className="swatch">
-                    {item.tag && <span className="card-tag">{item.tag}</span>}
-                    <img src={item.img} alt={item.name} style={{ objectPosition: item.pos }} />
-                    <div className="swatch-view">
-                      <button
-                        className="quick-view-btn"
-                        onClick={(e) => { e.stopPropagation(); openProduct(item); }}
-                        aria-label={`Quick view ${item.name}`}
-                      >
-                        ⚡ Quick View
-                      </button>
-                      <span className="quick-view-label">Pick size &amp; quantity</span>
+          {loadingProducts ? (
+            Array.from({ length: 4 }).map((_, idx) => (
+              <div className="skeleton-card" key={`skel-${idx}`}>
+                <div className="skeleton-box skeleton-img" />
+                <div className="skeleton-box skeleton-line-sm" />
+                <div className="skeleton-box skeleton-line-md" />
+                <div className="skeleton-box skeleton-line-lg" />
+              </div>
+            ))
+          ) : collection
+              .filter((item) => {
+                const matchesFilter = activeFilter === "all" || item.category === activeFilter;
+                if (!searchQuery.trim()) return matchesFilter;
+                const q = searchQuery.toLowerCase().trim();
+                const matchesSearch =
+                  (item.name && item.name.toLowerCase().includes(q)) ||
+                  (item.cat && item.cat.toLowerCase().includes(q)) ||
+                  (item.desc && item.desc.toLowerCase().includes(q)) ||
+                  (item.tag && item.tag.toLowerCase().includes(q));
+                return matchesFilter && matchesSearch;
+              })
+              .length === 0 ? (
+            <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "60px 20px" }}>
+              <p style={{ fontSize: "16px", color: "var(--text-dim)", marginBottom: "16px" }}>
+                No pieces found matching "{searchQuery}".
+              </p>
+              <button className="btn btn-outline btn-sm" onClick={() => { setSearchQuery(""); setActiveFilter("all"); }}>
+                Reset Search &amp; Filters
+              </button>
+            </div>
+          ) : (
+            collection
+              .filter((item) => {
+                const matchesFilter = activeFilter === "all" || item.category === activeFilter;
+                if (!searchQuery.trim()) return matchesFilter;
+                const q = searchQuery.toLowerCase().trim();
+                const matchesSearch =
+                  (item.name && item.name.toLowerCase().includes(q)) ||
+                  (item.cat && item.cat.toLowerCase().includes(q)) ||
+                  (item.desc && item.desc.toLowerCase().includes(q)) ||
+                  (item.tag && item.tag.toLowerCase().includes(q));
+                return matchesFilter && matchesSearch;
+              })
+              .map((item) => (
+                <Reveal key={item.id || item.name}>
+                  <TiltCard>
+                    <div className="product-card" onClick={() => openProduct(item)} role="button" tabIndex={0}>
+                      <div className="swatch">
+                        {item.tag && <span className="card-tag">{item.tag}</span>}
+                        <img src={item.img} alt={item.name} style={{ objectPosition: item.pos }} />
+                        <div className="swatch-view">
+                          <button
+                            className="quick-view-btn"
+                            onClick={(e) => { e.stopPropagation(); openProduct(item); }}
+                            aria-label={`Quick view ${item.name}`}
+                            style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+                          >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                              <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            Quick View
+                          </button>
+                          <span className="quick-view-label">Pick size &amp; quantity</span>
+                        </div>
+                      </div>
+                      <span className="product-cat">{item.cat}</span>
+                      <h3 className="product-name">{item.name}</h3>
+                      <div className="price-row">
+                        <span className="primary">
+                          {item.priceN || (item.priceNGN ? formatNGN(item.priceNGN) : "₦60,000")}
+                        </span>
+                        <span className="secondary">
+                          {item.priceD || (item.priceUSD ? formatUSD(item.priceUSD) : "$45")}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <span className="product-cat">{item.cat}</span>
-                  <h3 className="product-name">{item.name}</h3>
-                  <div className="price-row">
-                    <span className="primary">
-                      {item.priceN || (item.priceNGN ? formatNGN(item.priceNGN) : "₦60,000")}
-                    </span>
-                    <span className="secondary">
-                      {item.priceD || (item.priceUSD ? formatUSD(item.priceUSD) : "$45")}
-                    </span>
-                  </div>
-                </div>
-              </TiltCard>
-            </Reveal>
-          ))}
+                  </TiltCard>
+                </Reveal>
+              ))
+          )}
         </div>
       </section>
 
@@ -2791,6 +3446,16 @@ export default function App() {
               gone, it's gone — that's the deal we make with the people who
               wear it.
             </p>
+            <div style={{ marginTop: "20px" }}>
+              <a
+                href="#collection"
+                onClick={(e) => handleNavClick(e, "#collection")}
+                className="btn btn-outline btn-sm"
+                style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+              >
+                Explore Drop 04 Pieces →
+              </a>
+            </div>
           </Reveal>
           <Reveal>
             <div className="stat-list">
@@ -2834,6 +3499,9 @@ export default function App() {
                 <div className="info">
                   <div className="note">{f.note}</div>
                   <div className="title">{f.title}</div>
+                  <span style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--gold)", marginTop: "4px", display: "inline-block" }}>
+                    Quick View →
+                  </span>
                 </div>
               </div>
             ))}
@@ -2854,7 +3522,35 @@ export default function App() {
               checkout, just steeze. Tell us the piece, your size, and where
               it's headed.
             </p>
-            <div className="contact-number">+234 811 009 2995</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "14px 0" }}>
+              <div className="contact-number" style={{ margin: 0 }}>+234 811 009 2995</div>
+              <button
+                type="button"
+                className="btn-copy"
+                onClick={() => handleCopy("+2348110092995", "phone")}
+                title="Copy phone number"
+                style={{
+                  background: "var(--bg-soft)",
+                  border: "1px solid var(--line)",
+                  borderRadius: "4px",
+                  padding: "4px 8px",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  cursor: "pointer",
+                  color: "var(--text)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px"
+                }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                {copiedPhone ? "COPIED" : "COPY"}
+              </button>
+            </div>
             <p className="contact-note">We reply within a few hours, Lagos time (WAT).</p>
           </div>
           <a
@@ -2902,7 +3598,7 @@ export default function App() {
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
           >
-            Back To Top ↑
+            Back To Top
           </a>
           <a
             href={waLink("Hi SteezeDrip, I'm reaching out from the website.")}
@@ -2942,7 +3638,7 @@ export default function App() {
           </a>
         </div>
         <div className="footer-bottom">
-          <span>© 2026 Only1kuzzy. All rights reserved.</span>
+          <span>Copyright 2026 Only1kuzzy. All rights reserved.</span>
           <span>Lagos, Nigeria</span>
         </div>
       </footer>
@@ -3014,6 +3710,69 @@ export default function App() {
         </svg>
         <span className="label">Chat with us</span>
       </a>
+      {/* ---------------- SEARCH MODAL ---------------- */}
+      <SearchModal
+        isOpen={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+        collection={collection}
+        onSelectProduct={openProduct}
+      />
+
+      {/* ---------------- COOKIE CONSENT BANNER ---------------- */}
+      {!cookieConsent && (
+        <aside className="cookie-banner" role="region" aria-label="Cookie preferences">
+          <div className="cookie-banner-content">
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: "1 1 260px" }}>
+              <span style={{ color: "var(--gold)", flexShrink: 0, display: "flex" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </span>
+              <p className="cookie-banner-text">
+                SteezeDrip uses essential cookies to preserve your bag and enable secure Paystack checkout.
+              </p>
+            </div>
+            <div className="cookie-banner-actions">
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={() => setLegalTab("privacy")}
+              >
+                Privacy Policy
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem("steezedrip_cookie_consent", "true");
+                  }
+                  setCookieConsent(true);
+                }}
+              >
+                Got It
+              </button>
+            </div>
+          </div>
+        </aside>
+      )}
+
+      {/* ---------------- SCROLL BACK TO TOP ---------------- */}
+      {showBackToTop && (
+        <button
+          className="scroll-to-top-btn"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          aria-label="Scroll back to top"
+          title="Scroll back to top"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="19" x2="12" y2="5"></line>
+            <polyline points="5 12 12 5 19 12"></polyline>
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
