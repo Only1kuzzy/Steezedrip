@@ -261,7 +261,7 @@ export default function AdminDashboard({ onClose, onProductCreated }) {
       if (data.success) {
         setFeedbackMsg({
           type: "success",
-          text: `Drop "${name}" published successfully!`,
+          text: `✨ Drop "${name}" published successfully! Taking you to catalog...`,
         });
         // Reset form
         setName("");
@@ -272,11 +272,17 @@ export default function AdminDashboard({ onClose, onProductCreated }) {
         setExtraImageFiles([]);
         setExtraPreviews([]);
         if (onProductCreated) onProductCreated(data.product);
+
+        // Auto transition to catalog tab after short delay so user sees it live
+        setTimeout(() => {
+          setActiveTab("manage");
+          setFeedbackMsg(null);
+        }, 1200);
       } else {
         setFeedbackMsg({ type: "error", text: data.error || "Failed to create product" });
       }
     } catch (err) {
-      setFeedbackMsg({ type: "error", text: "Network error: " + err.message });
+      setFeedbackMsg({ type: "error", text: "Network error: " + (err.message || "Failed to reach server") });
     } finally {
       setSubmitting(false);
     }
@@ -560,16 +566,22 @@ export default function AdminDashboard({ onClose, onProductCreated }) {
                       )}
                     </div>
 
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="btn btn-primary btn-lg"
-                      style={{ width: "100%", justifyContent: "center", marginTop: "16px" }}
-                    >
-                      {submitting ? "Publishing Drop..." : "🚀 Publish Drop To Storefront"}
-                    </button>
-                  </div>
-                </form>
+                      {feedbackMsg && (
+                        <div className={`admin-alert ${feedbackMsg.type}`} style={{ marginTop: "14px" }}>
+                          {feedbackMsg.text}
+                        </div>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="btn btn-primary btn-lg"
+                        style={{ width: "100%", justifyContent: "center", marginTop: "16px" }}
+                      >
+                        {submitting ? "⏳ Uploading photo to Cloudinary & saving..." : "🚀 Publish Drop To Storefront"}
+                      </button>
+                    </div>
+                  </form>
 
                 {/* Live Card Preview Column */}
                 <div className="admin-preview-col">

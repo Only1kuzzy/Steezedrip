@@ -9,7 +9,7 @@ const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max per photo
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25MB max per photo
 });
 
 // Configure Cloudinary if credentials are provided
