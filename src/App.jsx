@@ -5,6 +5,7 @@ import VARSITY_IMG from "./assets/varsity.webp";
 import NOT_AVERAGE_WORN_IMG from "./assets/not_average_worn.webp";
 import STEEZE_BACK_DETAIL_IMG from "./assets/steeze_back_detail.webp";
 import VARSITY_PATCH_DETAIL_IMG from "./assets/varsity_patch_detail.webp";
+import AdminDashboard from "./AdminDashboard.jsx";
 
 /* ------------------------------------------------------------------
    STEEZEDRIP — brand site, v2
@@ -13,7 +14,7 @@ import VARSITY_PATCH_DETAIL_IMG from "./assets/varsity_patch_detail.webp";
 
 
 const WHATSAPP_NUMBER = "2348110092995";
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://your-backend-url.onrender.com";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 const waLink = (msg) =>
   `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 
@@ -671,11 +672,15 @@ function CartDrawer({ cart, onClose, onUpdateQty, onRemove, onCheckout }) {
 
 /* ---------- checkout modal ---------- */
 
-function CheckoutModal({ cart, onClose, onBack }) {
+function CheckoutModal({ cart, onClose, onBack, onClearCart }) {
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("paystack"); // "paystack" | "whatsapp"
+  const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [orderReceipt, setOrderReceipt] = useState(null);
 
   const subtotalNGN = cart.reduce((s, i) => s + i.priceNGN * i.qty, 0);
   const subtotalUSD = cart.reduce((s, i) => s + i.priceUSD * i.qty, 0);
@@ -698,12 +703,78 @@ function CheckoutModal({ cart, onClose, onBack }) {
       `Subtotal: ${formatNGN(subtotalNGN)} (${formatUSD(subtotalUSD)})`,
       "",
       `Name: ${name.trim() || "-"}`,
+      `Email: ${email.trim() || "-"}`,
       `Phone: ${phone.trim() || "-"}`,
       `Delivery address: ${address.trim() || "-"}`,
     ].join("\n");
   };
 
-  const handleSend = (e) => {
+  const handlePaystackPayment = async () => {
+    if (!name.trim()) {
+      setErrorMsg("Please enter your full name.");
+      return;
+    }
+    if (!email.trim() || !email.includes("@")) {
+      setErrorMsg("Please enter a valid email address for your order receipt.");
+      return;
+    }
+    if (!phone.trim()) {
+      setErrorMsg("Please enter your phone or WhatsApp number.");
+      return;
+    }
+
+    setErrorMsg("");
+    setIsProcessing(true);
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/payments/initialize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          address: address.trim(),
+          cart,
+          amountNGN: subtotalNGN,
+          amountUSD: subtotalUSD,
+        }),
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error || "Failed to initialize payment");
+      }
+
+      // If live Paystack authorization URL is returned, navigate to Paystack payment gateway
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
+        return;
+      }
+
+      // If in Demo / Test mode without live keys:
+      // Verify payment on backend to mark order as paid
+      await fetch(`${BACKEND_URL}/api/payments/verify/${data.reference}`);
+
+      setOrderReceipt({
+        reference: data.reference,
+        name: name.trim(),
+        email: email.trim(),
+        amountNGN: subtotalNGN,
+        items: [...cart],
+        demoMode: Boolean(data.demoMode),
+      });
+
+      if (onClearCart) onClearCart();
+    } catch (err) {
+      console.error("Payment error:", err);
+      setErrorMsg(err.message || "Could not connect to payment gateway.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleWhatsAppSend = (e) => {
     if (!name.trim()) {
       e.preventDefault();
       setErrorMsg("Please enter your name to proceed.");
@@ -717,6 +788,57 @@ function CheckoutModal({ cart, onClose, onBack }) {
     setErrorMsg("");
     onClose();
   };
+
+  // Order Confirmed Screen
+  if (orderReceipt) {
+    return (
+      <div className="overlay-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="pm-card checkout" style={{ maxWidth: "520px" }}>
+          <button className="pm-close" onClick={onClose} aria-label="Close">✕</button>
+          <div className="pm-details" style={{ width: "100%", textAlign: "center", padding: "10px 0" }}>
+            <span style={{ fontSize: "48px", display: "block", marginBottom: "12px" }}>🎉</span>
+            <span className="eyebrow">Payment Confirmed</span>
+            <h3 className="pm-name" style={{ margin: "8px 0 16px" }}>Order Placed Successfully!</h3>
+
+            <div className="checkout-summary" style={{ textAlign: "left", marginBottom: "20px" }}>
+              <div className="checkout-row">
+                <span>Order Reference</span>
+                <strong style={{ fontFamily: "monospace", color: "var(--gold)" }}>{orderReceipt.reference}</strong>
+              </div>
+              <div className="checkout-row">
+                <span>Customer</span>
+                <span>{orderReceipt.name} ({orderReceipt.email})</span>
+              </div>
+              <div className="checkout-row total">
+                <span>Total Paid</span>
+                <span>{formatNGN(orderReceipt.amountNGN)}</span>
+              </div>
+            </div>
+
+            {orderReceipt.demoMode && (
+              <p className="admin-hint" style={{ color: "var(--gold)", marginBottom: "16px", fontSize: "12px" }}>
+                ✓ Recorded in database in Test Mode. Add Paystack Live Keys to take real payments.
+              </p>
+            )}
+
+            <div className="pm-actions">
+              <a
+                className="btn btn-wa"
+                style={{ width: "100%", justifyContent: "center" }}
+                href={waLink(`Hi SteezeDrip, I just completed order ${orderReceipt.reference} (${formatNGN(orderReceipt.amountNGN)}).`)}
+                target="_blank" rel="noopener noreferrer"
+              >
+                Track Order On WhatsApp →
+              </a>
+              <button className="btn btn-outline" style={{ width: "100%", justifyContent: "center" }} onClick={onClose}>
+                Continue Shopping
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="overlay-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
@@ -739,6 +861,26 @@ function CheckoutModal({ cart, onClose, onBack }) {
             </div>
           </div>
 
+          {/* Payment Method Selector */}
+          <div className="payment-method-toggle" style={{ display: "flex", gap: "8px", margin: "16px 0 20px" }}>
+            <button
+              type="button"
+              className={`btn btn-sm ${paymentMethod === "paystack" ? "btn-primary" : "btn-outline"}`}
+              style={{ flex: 1, justifyContent: "center" }}
+              onClick={() => setPaymentMethod("paystack")}
+            >
+              💳 Pay Online (Paystack)
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${paymentMethod === "whatsapp" ? "btn-primary" : "btn-outline"}`}
+              style={{ flex: 1, justifyContent: "center" }}
+              onClick={() => setPaymentMethod("whatsapp")}
+            >
+              💬 WhatsApp Order
+            </button>
+          </div>
+
           <div className="pm-field">
             <span className="pm-label">Your Details</span>
             <input
@@ -750,6 +892,18 @@ function CheckoutModal({ cart, onClose, onBack }) {
                 if (errorMsg) setErrorMsg("");
               }}
             />
+            {paymentMethod === "paystack" && (
+              <input
+                type="email"
+                className={`ck-input ${errorMsg && (!email.trim() || !email.includes("@")) ? "has-error" : ""}`}
+                placeholder="Email address (for Paystack receipt) *"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errorMsg) setErrorMsg("");
+                }}
+              />
+            )}
             <input
               className={`ck-input ${errorMsg && !phone.trim() ? "has-error" : ""}`}
               placeholder="Phone / WhatsApp number *"
@@ -759,7 +913,13 @@ function CheckoutModal({ cart, onClose, onBack }) {
                 if (errorMsg) setErrorMsg("");
               }}
             />
-            <textarea className="ck-input" placeholder="Delivery address" rows={2} value={address} onChange={(e) => setAddress(e.target.value)} />
+            <textarea
+              className="ck-input"
+              placeholder="Delivery address (Street, City, State)"
+              rows={2}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
             {errorMsg && (
               <p style={{ color: "#d9534f", fontSize: "13px", margin: "6px 0 0", fontWeight: "600" }}>
                 {errorMsg}
@@ -768,21 +928,37 @@ function CheckoutModal({ cart, onClose, onBack }) {
           </div>
 
           <div className="pm-actions">
-            <a
-              className="btn btn-wa"
-              style={{ width: "100%", justifyContent: "center" }}
-              href={waLink(buildMessage())}
-              target="_blank" rel="noopener noreferrer"
-              onClick={handleSend}
-            >
-              Send Order On WhatsApp
-            </a>
+            {paymentMethod === "paystack" ? (
+              <button
+                type="button"
+                className="btn btn-primary btn-lg"
+                style={{ width: "100%", justifyContent: "center" }}
+                disabled={isProcessing}
+                onClick={handlePaystackPayment}
+              >
+                {isProcessing
+                  ? "Connecting to Paystack..."
+                  : `Pay ${formatNGN(subtotalNGN)} with Paystack →`}
+              </button>
+            ) : (
+              <a
+                className="btn btn-wa"
+                style={{ width: "100%", justifyContent: "center" }}
+                href={waLink(buildMessage())}
+                target="_blank" rel="noopener noreferrer"
+                onClick={handleWhatsAppSend}
+              >
+                Send Order On WhatsApp
+              </a>
+            )}
             <button className="btn btn-outline" style={{ width: "100%", justifyContent: "center" }} onClick={onBack}>
               Back To Bag
             </button>
           </div>
           <p className="pm-note">
-            Fill in your details above, then tap the button — your full order lands straight in our WhatsApp.
+            {paymentMethod === "paystack"
+              ? "Secured by Paystack: Supports Debit/Credit Cards, Bank Transfer, Apple Pay, and USSD."
+              : "Fill in your details above, then tap the button — your full order lands straight in our WhatsApp."}
           </p>
         </div>
       </div>
@@ -858,14 +1034,51 @@ export default function App() {
     }
   };
 
+  const [adminOpen, setAdminOpen] = useState(() => {
+    return (
+      window.location.hash.includes("steeze-hq") ||
+      window.location.pathname.includes("steeze-hq")
+    );
+  });
+
+  useEffect(() => {
+    const handleHash = () => {
+      if (
+        window.location.hash.includes("steeze-hq") ||
+        window.location.pathname.includes("steeze-hq")
+      ) {
+        setAdminOpen(true);
+      }
+    };
+    window.addEventListener("hashchange", handleHash);
+    window.addEventListener("popstate", handleHash);
+    return () => {
+      window.removeEventListener("hashchange", handleHash);
+      window.removeEventListener("popstate", handleHash);
+    };
+  }, []);
+
+  const handleCloseAdmin = () => {
+    setAdminOpen(false);
+    if (
+      window.location.hash.includes("steeze-hq") ||
+      window.location.pathname.includes("steeze-hq")
+    ) {
+      window.history.replaceState({}, "", "/");
+    }
+  };
+
   const is404 =
     currentPath !== "/" &&
     currentPath !== "/index.html" &&
-    currentPath !== "";
+    currentPath !== "" &&
+    !currentPath.includes("steeze-hq");
 
   // Dynamic Page Titles based on view & cart state
   useEffect(() => {
-    if (is404) {
+    if (adminOpen) {
+      document.title = "Admin Command Center — SteezeDrip";
+    } else if (is404) {
       document.title = "404 — Lost In The Cut | SteezeDrip";
     } else if (selectedProduct) {
       document.title = `${selectedProduct.name} (₦60,000) — SteezeDrip`;
@@ -876,24 +1089,40 @@ export default function App() {
     } else {
       document.title = "SteezeDrip — Lagos-Rooted, World-Bound | Drop 04";
     }
-  }, [is404, selectedProduct, checkoutOpen, cartOpen, cart]);
+  }, [adminOpen, is404, selectedProduct, checkoutOpen, cartOpen, cart]);
 
   useEffect(() => {
-    const targetUrl = normalizeGoogleSheetUrl(SHEET_CSV_URL);
-    if (!targetUrl) return;
-    fetch(targetUrl)
+    // 1. First attempt to load live catalog from PostgreSQL backend
+    fetch(`${BACKEND_URL}/api/products`)
       .then((res) => {
-        if (!res.ok) throw new Error(`Failed to fetch products: HTTP ${res.status}`);
-        return res.text();
+        if (!res.ok) throw new Error("Backend offline or error");
+        return res.json();
       })
-      .then((csvText) => {
-        const parsed = parseProductsCSV(csvText);
-        if (parsed && parsed.length > 0) {
-          setCollection(parsed);
+      .then((data) => {
+        if (data.success && data.products && data.products.length > 0) {
+          setCollection(data.products);
+          return;
         }
+        throw new Error("No products from backend, falling back to sheet");
       })
-      .catch((err) => {
-        console.warn("Could not load products from Google Sheet, using fallback:", err);
+      .catch(() => {
+        // 2. Fallback to Google Sheet CSV
+        const targetUrl = normalizeGoogleSheetUrl(SHEET_CSV_URL);
+        if (!targetUrl) return;
+        fetch(targetUrl)
+          .then((res) => {
+            if (!res.ok) throw new Error(`Failed to fetch products: HTTP ${res.status}`);
+            return res.text();
+          })
+          .then((csvText) => {
+            const parsed = parseProductsCSV(csvText);
+            if (parsed && parsed.length > 0) {
+              setCollection(parsed);
+            }
+          })
+          .catch((err) => {
+            console.warn("Could not load products from Google Sheet, using fallback:", err);
+          });
       });
   }, []);
 
@@ -1726,6 +1955,443 @@ export default function App() {
           border-color:#d9534f !important;
           background:rgba(217,83,79,0.06) !important;
         }
+
+        /* ---------- ADMIN DASHBOARD & COMMAND CENTER ---------- */
+        .admin-overlay {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0,0,0,0.85);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          z-index: 200;
+          overflow-y: auto;
+          padding: clamp(16px, 3vw, 40px) clamp(12px, 3vw, 32px);
+          display: flex;
+          justify-content: center;
+          align-items: flex-start;
+          animation: adminFadeIn 0.3s ease;
+        }
+        @keyframes adminFadeIn {
+          from { opacity: 0; transform: scale(0.98); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .admin-container {
+          background: var(--bg);
+          color: var(--text);
+          width: 100%;
+          max-width: 1120px;
+          border-radius: 8px;
+          border: 1px solid var(--line);
+          box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+          overflow: hidden;
+          margin-bottom: 40px;
+        }
+        .admin-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px 28px;
+          border-bottom: 1px solid var(--line);
+          background: var(--panel);
+        }
+        .admin-eyebrow {
+          font-size: 11px;
+          letter-spacing: 0.25em;
+          text-transform: uppercase;
+          color: var(--gold);
+          font-weight: 700;
+          display: block;
+        }
+        .admin-brand h2 {
+          font-family: 'Big Shoulders Display', sans-serif;
+          font-size: clamp(20px, 3vw, 26px);
+          letter-spacing: 0.04em;
+          margin: 4px 0 0;
+        }
+        .admin-header-actions {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+        }
+        .admin-auth-card {
+          padding: 80px 24px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .admin-auth-inner {
+          max-width: 420px;
+          width: 100%;
+          text-align: center;
+          background: var(--panel);
+          padding: 36px 28px;
+          border-radius: 8px;
+          border: 1px solid var(--line);
+        }
+        .auth-lock-icon {
+          font-size: 44px;
+          display: block;
+          margin-bottom: 14px;
+        }
+        .admin-auth-inner h3 {
+          font-family: 'Big Shoulders Display', sans-serif;
+          font-size: 24px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          margin: 0 0 8px;
+        }
+        .admin-auth-inner p {
+          color: var(--text-dim);
+          font-size: 13px;
+          line-height: 1.5;
+          margin-bottom: 24px;
+        }
+        .admin-auth-form {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .admin-nav-tabs {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          padding: 12px 28px;
+          border-bottom: 1px solid var(--line);
+          background: var(--bg-soft);
+        }
+        .admin-tab {
+          background: none;
+          border: 1px solid transparent;
+          color: var(--text-dim);
+          font-size: 13px;
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          padding: 8px 18px;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .admin-tab:hover {
+          color: var(--text);
+        }
+        .admin-tab.active {
+          background: var(--panel);
+          color: var(--gold);
+          border-color: var(--line);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .admin-main {
+          padding: 24px clamp(16px, 3vw, 28px);
+        }
+        .admin-grid {
+          display: grid;
+          grid-template-columns: 1.4fr 1fr;
+          gap: 28px;
+          align-items: flex-start;
+        }
+        @media(max-width: 860px) {
+          .admin-grid { grid-template-columns: 1fr; }
+        }
+        .admin-card {
+          background: var(--panel);
+          border: 1px solid var(--line);
+          border-radius: 6px;
+          padding: 22px;
+          margin-bottom: 20px;
+        }
+        .section-subtitle {
+          font-family: 'Big Shoulders Display', sans-serif;
+          font-size: 20px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          margin: 0 0 16px;
+          color: var(--gold);
+        }
+        .admin-form-row {
+          display: flex;
+          gap: 14px;
+          margin-bottom: 14px;
+        }
+        .admin-field {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          margin-bottom: 14px;
+          flex: 1;
+        }
+        .admin-field.flex-2 { flex: 2; }
+        .admin-field.flex-1 { flex: 1; }
+        .admin-label {
+          font-size: 12px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: var(--text-dim);
+        }
+        .admin-hint {
+          font-size: 12px;
+          color: var(--text-dim);
+          line-height: 1.4;
+        }
+        .admin-pill-group {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .admin-size-pill, .admin-color-pill {
+          background: var(--bg-soft);
+          border: 1px solid var(--line);
+          color: var(--text);
+          padding: 6px 14px;
+          font-size: 12px;
+          font-weight: 600;
+          border-radius: 4px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          transition: all 0.2s;
+        }
+        .admin-size-pill.active, .admin-color-pill.active {
+          background: var(--gold);
+          color: #0b0b0d;
+          border-color: var(--gold);
+        }
+        .color-swatch-dot {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          border: 1px solid rgba(0,0,0,0.2);
+          display: inline-block;
+        }
+        .admin-file-input {
+          background: var(--bg-soft);
+          border: 1px dashed var(--line);
+          padding: 12px;
+          border-radius: 4px;
+          cursor: pointer;
+          color: var(--text);
+          font-size: 13px;
+        }
+        .admin-extra-previews {
+          display: flex;
+          gap: 8px;
+          margin-top: 10px;
+        }
+        .extra-thumb {
+          width: 60px;
+          height: 60px;
+          object-fit: cover;
+          border-radius: 4px;
+          border: 1px solid var(--line);
+        }
+        .preview-sticky {
+          position: sticky;
+          top: 24px;
+          background: var(--panel);
+          border: 1px solid var(--line);
+          border-radius: 6px;
+          padding: 22px;
+        }
+        .preview-card {
+          border: 1px solid var(--line);
+          border-radius: 6px;
+          overflow: hidden;
+          background: var(--bg);
+        }
+        .preview-card .card-media {
+          position: relative;
+          width: 100%;
+          height: 300px;
+          overflow: hidden;
+        }
+        .preview-card .card-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .preview-card .card-info {
+          padding: 16px;
+        }
+        .preview-card .card-cat {
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: var(--gold);
+          font-weight: 600;
+        }
+        .preview-card .card-title {
+          font-family: 'Big Shoulders Display', sans-serif;
+          font-size: 20px;
+          margin: 4px 0 8px;
+          text-transform: uppercase;
+        }
+        .preview-card .card-price {
+          font-weight: 700;
+          font-size: 16px;
+          color: var(--text);
+        }
+        .preview-card .card-sizes {
+          font-size: 12px;
+          color: var(--text-dim);
+          margin-top: 6px;
+        }
+        .admin-alert {
+          padding: 10px 14px;
+          border-radius: 4px;
+          font-size: 13px;
+          font-weight: 600;
+          margin-bottom: 14px;
+        }
+        .admin-alert.success {
+          background: rgba(45, 90, 39, 0.15);
+          color: #55b34a;
+          border: 1px solid #55b34a;
+        }
+        .admin-alert.error {
+          background: rgba(138, 43, 35, 0.15);
+          color: #d9534f;
+          border: 1px solid #d9534f;
+        }
+        .admin-table-wrapper {
+          overflow-x: auto;
+        }
+        .admin-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 13px;
+        }
+        .admin-table th, .admin-table td {
+          padding: 12px 14px;
+          text-align: left;
+          border-bottom: 1px solid var(--line);
+        }
+        .admin-table th {
+          background: var(--bg-soft);
+          color: var(--text-dim);
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+        .admin-status-pill {
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          padding: 4px 8px;
+          border-radius: 3px;
+          display: inline-block;
+        }
+        .admin-status-pill.live {
+          background: rgba(45, 90, 39, 0.2);
+          color: #55b34a;
+        }
+        .admin-status-pill.hidden {
+          background: rgba(128, 128, 128, 0.2);
+          color: #aaa;
+        }
+        .admin-status-pill.pending {
+          background: rgba(217, 178, 60, 0.2);
+          color: #d9b23c;
+        }
+        .admin-badge-tag {
+          font-size: 10px;
+          font-weight: 800;
+          padding: 2px 6px;
+          background: var(--gold);
+          color: #000;
+          border-radius: 2px;
+        }
+        .ref-code {
+          font-family: monospace;
+          font-size: 11px;
+          color: var(--gold);
+          background: var(--bg-soft);
+          padding: 3px 6px;
+          border-radius: 3px;
+        }
+        .wa-customer-link {
+          color: #25d366;
+          font-weight: 600;
+          text-decoration: none;
+        }
+        .wa-customer-link:hover { text-decoration: underline; }
+        .admin-empty-state {
+          padding: 60px 20px;
+          text-align: center;
+          color: var(--text-dim);
+        }
+        .admin-empty-state h4 {
+          color: var(--text);
+          font-size: 18px;
+          margin: 12px 0 6px;
+        }
+        .catalog-header-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+        .health-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 16px;
+          margin-top: 14px;
+        }
+        .health-stat {
+          background: var(--bg-soft);
+          padding: 14px;
+          border-radius: 4px;
+          border: 1px solid var(--line);
+        }
+        .health-label {
+          display: block;
+          font-size: 11px;
+          color: var(--text-dim);
+          text-transform: uppercase;
+          margin-bottom: 6px;
+        }
+        .health-badge {
+          font-size: 12px;
+          font-weight: 800;
+          padding: 4px 8px;
+          border-radius: 3px;
+          display: inline-block;
+        }
+        .health-badge.ok {
+          background: rgba(45, 90, 39, 0.2);
+          color: #55b34a;
+        }
+        .health-badge.warn {
+          background: rgba(217, 178, 60, 0.2);
+          color: #d9b23c;
+        }
+        .admin-guide-steps {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          margin-top: 12px;
+        }
+        .step-item {
+          background: var(--bg-soft);
+          border: 1px solid var(--line);
+          padding: 14px;
+          border-radius: 4px;
+          font-size: 13px;
+          line-height: 1.5;
+        }
+        .step-item strong {
+          color: var(--gold);
+          display: block;
+          margin-bottom: 4px;
+        }
+        .btn.danger {
+          border-color: #d9534f;
+          color: #d9534f;
+        }
+        .btn.danger:hover {
+          background: #d9534f;
+          color: #fff;
+        }
       `}</style>
 
       {/* ---------------- NAV ---------------- */}
@@ -2232,6 +2898,21 @@ export default function App() {
           cart={cart}
           onClose={() => { setCheckoutOpen(false); setCartOpen(false); }}
           onBack={() => setCheckoutOpen(false)}
+          onClearCart={() => setCart([])}
+        />
+      )}
+
+      {/* ---------------- ADMIN DASHBOARD OVERLAY ---------------- */}
+      {adminOpen && (
+        <AdminDashboard
+          onClose={handleCloseAdmin}
+          onProductCreated={(newProduct) => {
+            setCollection((prev) => [newProduct, ...prev]);
+            showToast({
+              type: "success",
+              msg: `New Drop "${newProduct.name}" is now live on the storefront!`,
+            });
+          }}
         />
       )}
 

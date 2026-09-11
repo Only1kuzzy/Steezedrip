@@ -2,4 +2,7 @@ node_modules
 dist
 .env
 .env.local
+server/.env
+!server/.env.example
+server/node_modules
 .DS_Store
