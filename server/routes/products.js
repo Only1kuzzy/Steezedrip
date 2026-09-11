@@ -140,6 +140,8 @@ router.get("/", async (req, res) => {
         cat: r.cat,
         priceNGN: Number(r.price_ngn),
         priceUSD: Number(r.price_usd),
+        priceN: `₦${Number(r.price_ngn).toLocaleString("en-NG")}`,
+        priceD: `$${Number(r.price_usd).toLocaleString("en-US")}`,
         tag: r.tag,
         category: r.category,
         img: r.img,
@@ -155,9 +157,14 @@ router.get("/", async (req, res) => {
     }
 
     // Fallback in-memory
-    const items = includeInactive
+    const items = (includeInactive
       ? fallbackProducts
-      : fallbackProducts.filter((p) => p.active !== false);
+      : fallbackProducts.filter((p) => p.active !== false)
+    ).map((p) => ({
+      ...p,
+      priceN: p.priceN || `₦${Number(p.priceNGN || 60000).toLocaleString("en-NG")}`,
+      priceD: p.priceD || `$${Number(p.priceUSD || 45).toLocaleString("en-US")}`,
+    }));
 
     return res.json({ success: true, count: items.length, products: items });
   } catch (err) {

@@ -1100,7 +1100,12 @@ export default function App() {
       })
       .then((data) => {
         if (data.success && data.products && data.products.length > 0) {
-          setCollection(data.products);
+          const mapped = data.products.map((p) => ({
+            ...p,
+            priceN: p.priceN || formatNGN(p.priceNGN || 60000),
+            priceD: p.priceD || formatUSD(p.priceUSD || 45),
+          }));
+          setCollection(mapped);
           return;
         }
         throw new Error("No products from backend, falling back to sheet");
@@ -1592,9 +1597,9 @@ export default function App() {
         }
         .product-cat{font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-dim);}
         .product-name{font-family:'Big Shoulders Display'; font-size:25px; font-weight:700; margin:2px 0 0; color:var(--text);}
-        .price-row{display:flex; justify-content:space-between; align-items:baseline; margin-top:auto;}
-        .price-row .primary{font-weight:700; color:var(--gold-soft);}
-        .price-row .secondary{color:var(--text-dim); font-size:13px;}
+        .price-row{display:flex; justify-content:space-between; align-items:baseline; margin-top:auto; padding-top:4px;}
+        .price-row .primary{font-family:'Big Shoulders Display', sans-serif; font-size:22px; font-weight:800; color:var(--gold-soft); letter-spacing:0.02em;}
+        .price-row .secondary{color:var(--text-dim); font-size:13px; font-weight:600;}
         .product-card{cursor:pointer;}
         .swatch-view{
           position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
@@ -2713,8 +2718,12 @@ export default function App() {
                   <span className="product-cat">{item.cat}</span>
                   <h3 className="product-name">{item.name}</h3>
                   <div className="price-row">
-                    <span className="primary">{item.priceN}</span>
-                    <span className="secondary">{item.priceD}</span>
+                    <span className="primary">
+                      {item.priceN || (item.priceNGN ? formatNGN(item.priceNGN) : "₦60,000")}
+                    </span>
+                    <span className="secondary">
+                      {item.priceD || (item.priceUSD ? formatUSD(item.priceUSD) : "$45")}
+                    </span>
                   </div>
                 </div>
               </TiltCard>
