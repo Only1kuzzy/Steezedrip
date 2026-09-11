@@ -6,6 +6,7 @@ import NOT_AVERAGE_WORN_IMG from "./assets/not_average_worn.webp";
 import STEEZE_BACK_DETAIL_IMG from "./assets/steeze_back_detail.webp";
 import VARSITY_PATCH_DETAIL_IMG from "./assets/varsity_patch_detail.webp";
 import AdminDashboard from "./AdminDashboard.jsx";
+import LegalModal from "./LegalModal.jsx";
 
 /* ------------------------------------------------------------------
    STEEZEDRIP — brand site, v2
@@ -1040,6 +1041,7 @@ export default function App() {
       window.location.pathname.includes("steeze-hq")
     );
   });
+  const [legalTab, setLegalTab] = useState(null);
 
   useEffect(() => {
     const handleHash = () => {
@@ -2397,6 +2399,42 @@ export default function App() {
           background: #d9534f;
           color: #fff;
         }
+
+        /* ---------- LEGAL COMPLIANCE MODAL ---------- */
+        .legal-modal-inner {
+          max-height: 82vh;
+          overflow-y: auto;
+        }
+        .legal-content-body {
+          animation: adminFadeIn 0.25s ease;
+        }
+        .legal-p {
+          font-size: 14px;
+          line-height: 1.7;
+          color: var(--text-dim);
+          margin-bottom: 14px;
+        }
+        .legal-list {
+          padding-left: 20px;
+          margin-bottom: 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          font-size: 13.5px;
+          line-height: 1.6;
+          color: var(--text-dim);
+        }
+        .legal-list strong {
+          color: var(--text);
+        }
+        .legal-h4 {
+          font-family: 'Big Shoulders Display', sans-serif;
+          font-size: 18px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          color: var(--gold-soft);
+          margin: 16px 0 6px;
+        }
       `}</style>
 
       {/* ---------------- NAV ---------------- */}
@@ -2875,6 +2913,33 @@ export default function App() {
           </a>
           <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a>
           <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer">TikTok</a>
+          <a
+            href="#shipping"
+            onClick={(e) => {
+              e.preventDefault();
+              setLegalTab("shipping");
+            }}
+          >
+            Shipping &amp; Returns
+          </a>
+          <a
+            href="#privacy"
+            onClick={(e) => {
+              e.preventDefault();
+              setLegalTab("privacy");
+            }}
+          >
+            Privacy Policy
+          </a>
+          <a
+            href="#terms"
+            onClick={(e) => {
+              e.preventDefault();
+              setLegalTab("terms");
+            }}
+          >
+            Terms of Service
+          </a>
         </div>
         <div className="footer-bottom">
           <span>© 2026 Only1kuzzy. All rights reserved.</span>
@@ -2922,6 +2987,14 @@ export default function App() {
               msg: `New Drop "${newProduct.name}" is now live on the storefront!`,
             });
           }}
+        />
+      )}
+
+      {/* ---------------- LEGAL COMPLIANCE MODAL ---------------- */}
+      {legalTab && (
+        <LegalModal
+          initialTab={legalTab}
+          onClose={() => setLegalTab(null)}
         />
       )}
 

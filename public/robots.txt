@@ -1,0 +1,9 @@
+# robots.txt for SteezeDrip (https://steezedrips.com)
+
+User-agent: *
+Allow: /
+Disallow: /steeze-hq
+Disallow: /#steeze-hq
+Disallow: /api/
+
+Sitemap: https://steezedrips.com/sitemap.xml
