@@ -14,7 +14,7 @@ import AdminDashboard from "./AdminDashboard.jsx";
 
 
 const WHATSAPP_NUMBER = "2348110092995";
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://steezedrip.onrender.com";
 const waLink = (msg) =>
   `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 

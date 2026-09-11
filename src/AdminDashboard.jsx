@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://steezedrip.onrender.com";
 
 const PRESET_COLORS = [
   { name: "Black", hex: "#161513" },
