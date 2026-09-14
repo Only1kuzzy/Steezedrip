@@ -16,7 +16,7 @@ const PRESET_COLORS = [
 
 const PRESET_SIZES = ["S", "M", "L", "XL", "XXL"];
 
-export default function AdminDashboard({ onClose, onProductCreated }) {
+export default function AdminDashboard({ onClose, onProductCreated, onCatalogUpdated }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return Boolean(sessionStorage.getItem("steeze_admin_token"));
   });
@@ -190,9 +190,13 @@ export default function AdminDashboard({ onClose, onProductCreated }) {
       });
       const data = await res.json();
       if (data.success) {
-        setCatalog((prev) =>
-          prev.map((p) => (p.id === id ? { ...p, active: data.active } : p))
-        );
+        setCatalog((prev) => {
+          const updated = prev.map((p) => (p.id === id ? { ...p, active: data.active } : p));
+          if (onCatalogUpdated) {
+            onCatalogUpdated(updated.filter((p) => p.active !== false));
+          }
+          return updated;
+        });
       }
     } catch (err) {
       console.error(err);
@@ -208,7 +212,13 @@ export default function AdminDashboard({ onClose, onProductCreated }) {
       });
       const data = await res.json();
       if (data.success) {
-        setCatalog((prev) => prev.filter((p) => p.id !== id));
+        setCatalog((prev) => {
+          const updated = prev.filter((p) => p.id !== id);
+          if (onCatalogUpdated) {
+            onCatalogUpdated(updated.filter((p) => p.active !== false));
+          }
+          return updated;
+        });
       }
     } catch (err) {
       console.error(err);

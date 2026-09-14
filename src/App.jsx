@@ -88,48 +88,96 @@ const DEFAULT_COLLECTION = [
     sizes: SIZES,
   },
   {
-    id: "steeze-tee",
-    name: "Steeze. Tee",
-    cat: "Back-Print Tee",
+    id: "2-fly",
+    name: "2 FLY",
+    cat: "Shirt",
     priceNGN: 60000,
     priceUSD: 45,
     priceN: "₦60,000",
     priceD: "$45",
     tag: "NEW",
     category: "latest",
-    img: HERO_IMG,
-    pos: "78% 22%",
-    desc: "The one that started it. Oversized black tee with a full back print — a \u201cChampions\u201d motif, three running figures, and the line that sums up the whole label. Front stays clean; the story's on the back.",
+    img: "https://i.imgur.com/m3hnO9M.jpeg",
+    pos: "center 20%",
+    desc: "LOVE GOD AND HAVE MONEY. Premium heavyweight tee with signature statement graphic cut.",
     images: [
-      { src: HERO_IMG, pos: "78% 22%", label: "Back" },
-      { src: STEEZE_BACK_DETAIL_IMG, pos: "center 10%", label: "Back Detail" },
+      { src: "https://i.imgur.com/m3hnO9M.jpeg", pos: "center 20%", label: "Front" },
+      { src: "https://i.imgur.com/Y0yAOPh.jpeg", pos: "center 20%", label: "Back" },
     ],
-    colors: ALL_COLORS,
-    sizes: SIZES,
+    colors: [
+      { name: "Black", hex: "#161513" },
+      { name: "White", hex: "#f5f2ea" },
+    ],
+    sizes: ["S", "M", "L", "XL", "XXL"],
   },
   {
-    id: "steeze-varsity-09",
-    name: "Steeze Varsity 09",
-    cat: "Long Sleeve",
+    id: "god-s-plan",
+    name: "GOD'S PLAN",
+    cat: "Shirt",
     priceNGN: 60000,
     priceUSD: 45,
     priceN: "₦60,000",
     priceD: "$45",
-    tag: "LIMITED",
+    tag: "NEW",
     category: "latest",
-    img: VARSITY_IMG,
-    pos: "center 15%",
-    desc: "Cropped, boxy long sleeve with a chenille-style \u201809\u2019 varsity patch on the chest. Heavyweight jersey, ribbed cuffs, built to sit right over flared denim.",
+    img: "https://i.imgur.com/YiEDcaS.jpeg",
+    pos: "center 20%",
+    desc: "I'M PART OF GOD'S PLAN. Heavyweight streetwear cut with front statement and back scripture typography.",
     images: [
-      { src: VARSITY_IMG, pos: "center 15%", label: "Front" },
-      { src: VARSITY_PATCH_DETAIL_IMG, pos: "center 30%", label: "Patch Detail" },
+      { src: "https://i.imgur.com/YiEDcaS.jpeg", pos: "center 20%", label: "Front" },
+      { src: "https://i.imgur.com/HNY9ASh.jpeg", pos: "center 20%", label: "Back" },
     ],
-    colors: ALL_COLORS,
-    sizes: SIZES,
+    colors: [
+      { name: "Black", hex: "#161513" },
+      { name: "White", hex: "#f5f2ea" },
+    ],
+    sizes: ["S", "M", "L", "XL", "XXL"],
+  },
+  {
+    id: "no-rules",
+    name: "NO RULES",
+    cat: "Shirt",
+    priceNGN: 60000,
+    priceUSD: 45,
+    priceN: "₦60,000",
+    priceD: "$45",
+    tag: "NEW",
+    category: "latest",
+    img: "https://i.imgur.com/CPXLwr1.jpeg",
+    pos: "center 20%",
+    desc: "NO RULES JUST STEEZE. Street-grade silhouette, bold monochrome graphic statement.",
+    images: [
+      { src: "https://i.imgur.com/CPXLwr1.jpeg", pos: "center 20%", label: "Front" },
+      { src: "https://i.imgur.com/5f5I9SQ.jpeg", pos: "center 20%", label: "Back" },
+    ],
+    colors: [
+      { name: "Black", hex: "#161513" },
+      { name: "White", hex: "#f5f2ea" },
+    ],
+    sizes: ["S", "M", "L", "XL", "XXL"],
   },
 ];
 
 const COLLECTION = DEFAULT_COLLECTION;
+
+const CATALOG_CACHE_KEY = "steezedrip_catalog_cache";
+
+function getInitialCollection() {
+  if (typeof window !== "undefined") {
+    try {
+      const cached = localStorage.getItem(CATALOG_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && Array.isArray(parsed.products) && parsed.products.length > 0) {
+          return parsed.products;
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load catalog cache:", e);
+    }
+  }
+  return DEFAULT_COLLECTION;
+}
 
 // Google Sheet published CSV URL (can also be supplied via VITE_SHEET_CSV_URL)
 const SHEET_CSV_URL =
@@ -1118,7 +1166,7 @@ function SearchModal({ isOpen, onClose, collection, onSelectProduct }) {
 /* ---------- main ---------- */
 
 export default function App() {
-  const [collection, setCollection] = useState(DEFAULT_COLLECTION);
+  const [collection, setCollection] = useState(getInitialCollection);
   const [menuOpen, setMenuOpen] = useState(false);
   const [theme, setTheme] = useState(() => {
     if (typeof window !== "undefined") {
@@ -1135,7 +1183,7 @@ export default function App() {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [cart, setCart] = useState([]);
@@ -1258,6 +1306,7 @@ export default function App() {
   }, [adminOpen, is404, selectedProduct, checkoutOpen, cartOpen, cart]);
 
   useEffect(() => {
+    let isMounted = true;
     // 1. First attempt to load live catalog from PostgreSQL backend
     fetch(`${BACKEND_URL}/api/products`)
       .then((res) => {
@@ -1265,6 +1314,7 @@ export default function App() {
         return res.json();
       })
       .then((data) => {
+        if (!isMounted) return;
         if (data.success && data.products && data.products.length > 0) {
           const mapped = data.products.map((p) => ({
             ...p,
@@ -1273,6 +1323,12 @@ export default function App() {
           }));
           setCollection(mapped);
           setLoadingProducts(false);
+          try {
+            localStorage.setItem(
+              CATALOG_CACHE_KEY,
+              JSON.stringify({ timestamp: Date.now(), products: mapped })
+            );
+          } catch (e) {}
           return;
         }
         throw new Error("No products from backend, falling back to sheet");
@@ -1281,7 +1337,7 @@ export default function App() {
         // 2. Fallback to Google Sheet CSV
         const targetUrl = normalizeGoogleSheetUrl(SHEET_CSV_URL);
         if (!targetUrl) {
-          setLoadingProducts(false);
+          if (isMounted) setLoadingProducts(false);
           return;
         }
         fetch(targetUrl)
@@ -1290,18 +1346,29 @@ export default function App() {
             return res.text();
           })
           .then((csvText) => {
+            if (!isMounted) return;
             const parsed = parseProductsCSV(csvText);
             if (parsed && parsed.length > 0) {
               setCollection(parsed);
+              try {
+                localStorage.setItem(
+                  CATALOG_CACHE_KEY,
+                  JSON.stringify({ timestamp: Date.now(), products: parsed })
+                );
+              } catch (e) {}
             }
           })
           .catch((err) => {
             console.warn("Could not load products from Google Sheet, using fallback:", err);
           })
           .finally(() => {
-            setLoadingProducts(false);
+            if (isMounted) setLoadingProducts(false);
           });
       });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -3677,11 +3744,31 @@ export default function App() {
         <AdminDashboard
           onClose={handleCloseAdmin}
           onProductCreated={(newProduct) => {
-            setCollection((prev) => [newProduct, ...prev]);
+            setCollection((prev) => {
+              const updated = [newProduct, ...prev.filter((p) => p.id !== newProduct.id)];
+              try {
+                localStorage.setItem(
+                  CATALOG_CACHE_KEY,
+                  JSON.stringify({ timestamp: Date.now(), products: updated })
+                );
+              } catch (e) {}
+              return updated;
+            });
             showToast({
               type: "success",
               msg: `New Drop "${newProduct.name}" is now live on the storefront!`,
             });
+          }}
+          onCatalogUpdated={(updatedCatalog) => {
+            if (updatedCatalog && Array.isArray(updatedCatalog)) {
+              setCollection(updatedCatalog);
+              try {
+                localStorage.setItem(
+                  CATALOG_CACHE_KEY,
+                  JSON.stringify({ timestamp: Date.now(), products: updatedCatalog })
+                );
+              } catch (e) {}
+            }
           }}
         />
       )}
