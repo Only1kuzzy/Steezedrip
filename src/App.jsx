@@ -2468,6 +2468,249 @@ export default function App() {
           border-radius: 4px;
           border: 1px solid var(--line);
         }
+
+        /* 4+ Photo Slots Grid */
+        .admin-photo-progress-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: var(--bg-soft);
+          border: 1px solid var(--line);
+          padding: 12px 16px;
+          border-radius: 6px;
+          margin-bottom: 16px;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .admin-photo-progress-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--text);
+        }
+        .admin-photo-progress-badge.ready {
+          color: #4ade80;
+        }
+        .admin-photo-progress-badge.warning {
+          color: #fbbf24;
+        }
+        .admin-photo-slots-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+          gap: 14px;
+          margin-bottom: 16px;
+        }
+        .admin-photo-slot {
+          background: var(--bg-soft);
+          border: 1px dashed var(--line);
+          border-radius: 6px;
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          position: relative;
+          transition: border-color 0.2s, background 0.2s;
+        }
+        .admin-photo-slot.filled {
+          border-style: solid;
+          border-color: rgba(200, 160, 90, 0.45);
+          background: rgba(200, 160, 90, 0.04);
+        }
+        .admin-photo-slot-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+        .admin-slot-label {
+          color: var(--gold);
+        }
+        .admin-slot-preview-box {
+          position: relative;
+          width: 100%;
+          height: 130px;
+          border-radius: 4px;
+          overflow: hidden;
+          background: var(--bg);
+          border: 1px solid var(--line);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .admin-slot-preview-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .admin-slot-preview-placeholder {
+          font-size: 11px;
+          color: var(--text-dim);
+          text-align: center;
+          padding: 10px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+        }
+        .admin-slot-clear-btn {
+          position: absolute;
+          top: 6px;
+          right: 6px;
+          background: rgba(0,0,0,0.7);
+          color: #fff;
+          border: none;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          cursor: pointer;
+          font-size: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s;
+        }
+        .admin-slot-clear-btn:hover {
+          background: #ef4444;
+        }
+        .admin-slot-inputs {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .admin-slot-mode-toggle {
+          display: flex;
+          gap: 4px;
+          margin-bottom: 2px;
+        }
+        .admin-slot-mode-btn {
+          background: none;
+          border: 1px solid var(--line);
+          color: var(--text-dim);
+          font-size: 10px;
+          padding: 3px 8px;
+          border-radius: 3px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .admin-slot-mode-btn.active {
+          background: var(--gold);
+          color: #000;
+          border-color: var(--gold);
+          font-weight: 700;
+        }
+
+        /* Edit Modal */
+        .admin-modal-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0,0,0,0.85);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          z-index: 300;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 20px;
+          overflow-y: auto;
+        }
+        .admin-modal-card {
+          background: var(--bg);
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          max-width: 1080px;
+          width: 100%;
+          max-height: 90vh;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+          overflow: hidden;
+          animation: adminFadeIn 0.25s ease;
+        }
+        .admin-modal-header {
+          padding: 18px 24px;
+          background: var(--panel);
+          border-bottom: 1px solid var(--line);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .admin-modal-body {
+          padding: 24px;
+          overflow-y: auto;
+        }
+        .admin-modal-footer {
+          padding: 16px 24px;
+          background: var(--panel);
+          border-top: 1px solid var(--line);
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+        }
+        .admin-edit-grid {
+          display: grid;
+          grid-template-columns: 1.4fr 1fr;
+          gap: 24px;
+        }
+        @media (max-width: 860px) {
+          .admin-edit-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+        .admin-gallery-strip {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+          gap: 12px;
+          margin-top: 10px;
+        }
+        .admin-gallery-item {
+          background: var(--panel);
+          border: 1px solid var(--line);
+          border-radius: 6px;
+          padding: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          position: relative;
+        }
+        .admin-gallery-item.is-cover {
+          border-color: var(--gold);
+        }
+        .admin-gallery-thumb {
+          width: 100%;
+          height: 100px;
+          object-fit: cover;
+          border-radius: 4px;
+        }
+        .admin-cover-badge {
+          position: absolute;
+          top: 12px;
+          left: 12px;
+          background: var(--gold);
+          color: #000;
+          font-size: 9px;
+          font-weight: 800;
+          padding: 2px 6px;
+          border-radius: 3px;
+          letter-spacing: 0.05em;
+        }
+        .admin-edit-btn {
+          color: var(--gold-soft);
+          border-color: rgba(200, 160, 90, 0.35);
+        }
+        .admin-edit-btn:hover {
+          background: rgba(200, 160, 90, 0.12);
+          border-color: var(--gold);
+          color: var(--gold);
+        }
+
         .preview-sticky {
           position: sticky;
           top: 24px;

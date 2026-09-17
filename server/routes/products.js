@@ -195,7 +195,7 @@ router.post(
   "/",
   upload.fields([
     { name: "mainImage", maxCount: 1 },
-    { name: "extraImages", maxCount: 4 },
+    { name: "extraImages", maxCount: 10 },
   ]),
   async (req, res) => {
     try {
@@ -210,6 +210,7 @@ router.post(
         colors,
         sizes,
         mainImageUrl,
+        extraImageUrls,
       } = req.body;
 
       if (!name || !priceNGN) {
@@ -225,7 +226,7 @@ router.post(
         .replace(/(^-|-$)/g, "") + "-" + Date.now().toString().slice(-4);
 
       // Handle main image
-      let finalMainImg = mainImageUrl || "";
+      let finalMainImg = mainImageUrl ? mainImageUrl.trim() : "";
       if (req.files && req.files.mainImage && req.files.mainImage[0]) {
         finalMainImg = await uploadToCloudinary(
           req.files.mainImage[0].buffer,
@@ -233,21 +234,54 @@ router.post(
         );
       }
 
-      // Handle extra gallery images
+      // Handle gallery images
       const galleryImages = [];
       if (finalMainImg) {
         galleryImages.push({ src: finalMainImg, label: "Front" });
       }
 
+      // Upload extra image files
       if (req.files && req.files.extraImages) {
+        const slotLabels = ["Back", "Side Angle", "Detail Shot", "On-Body", "Detail 2"];
         for (let i = 0; i < req.files.extraImages.length; i++) {
           const file = req.files.extraImages[i];
           const uploadedUrl = await uploadToCloudinary(file.buffer, file.mimetype);
           galleryImages.push({
             src: uploadedUrl,
-            label: i === 0 ? "Back" : `Detail ${i + 1}`,
+            label: slotLabels[i] || `View ${galleryImages.length + 1}`,
           });
         }
+      }
+
+      // Parse extra image URLs if provided
+      if (extraImageUrls) {
+        const parsedUrls = typeof extraImageUrls === "string" ? JSON.parse(extraImageUrls) : extraImageUrls;
+        if (Array.isArray(parsedUrls)) {
+          const slotLabels = ["Back", "Side Angle", "Detail Shot", "On-Body", "Detail 2"];
+          parsedUrls.forEach((url, i) => {
+            if (url && typeof url === "string" && url.trim()) {
+              galleryImages.push({
+                src: url.trim(),
+                label: slotLabels[i] || `View ${galleryImages.length + 1}`,
+              });
+            } else if (url && url.src) {
+              galleryImages.push(url);
+            }
+          });
+        }
+      }
+
+      // Enforce at least 4 photos requirement
+      if (galleryImages.length < 4) {
+        return res.status(400).json({
+          success: false,
+          error: `At least 4 photos are required per product drop (Front, Back, Angle, Detail). You provided ${galleryImages.length}.`,
+        });
+      }
+
+      // If finalMainImg wasn't set yet, pick the first gallery image
+      if (!finalMainImg && galleryImages.length > 0) {
+        finalMainImg = galleryImages[0].src;
       }
 
       // Parse colors and sizes
@@ -257,12 +291,14 @@ router.post(
       const newProduct = {
         id: slugId,
         name: name.trim(),
-        cat: (cat || "Apparel").trim(),
+        cat: (cat || "Graphic Tee").trim(),
         priceNGN: Number(priceNGN) || 60000,
         priceUSD: Number(priceUSD) || 45,
+        priceN: `₦${Number(priceNGN || 60000).toLocaleString("en-NG")}`,
+        priceD: `$${Number(priceUSD || 45).toLocaleString("en-US")}`,
         tag: tag || "NEW",
         category: category || "latest",
-        img: finalMainImg || "https://i.imgur.com/m3hnO9M.jpeg",
+        img: finalMainImg,
         pos: "center 20%",
         desc: desc || "",
         images: galleryImages,
@@ -296,10 +332,208 @@ router.post(
         fallbackProducts.unshift(newProduct);
       }
 
-      console.log(`✨ New drop created: ${newProduct.name} (${newProduct.id})`);
+      console.log(`✨ New drop created: ${newProduct.name} (${newProduct.id}) with ${galleryImages.length} photos`);
       res.status(201).json({ success: true, product: newProduct });
     } catch (err) {
       console.error("Error creating product:", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+);
+
+// PUT /api/products/:id - Update an existing product drop (Admin)
+router.put(
+  "/:id",
+  upload.fields([
+    { name: "mainImage", maxCount: 1 },
+    { name: "extraImages", maxCount: 10 },
+  ]),
+  async (req, res) => {
+    const { id } = req.params;
+    try {
+      const {
+        name,
+        cat,
+        priceNGN,
+        priceUSD,
+        tag,
+        category,
+        desc,
+        colors,
+        sizes,
+        active,
+        pos,
+        existingImages,
+        mainImageUrl,
+        extraImageUrls,
+      } = req.body;
+
+      // Find existing product first
+      let currentProduct = null;
+      if (hasDbUrl && pool) {
+        const queryRes = await pool.query("SELECT * FROM products WHERE id = $1", [id]);
+        if (queryRes.rowCount === 0) {
+          return res.status(404).json({ success: false, error: "Product not found" });
+        }
+        const r = queryRes.rows[0];
+        currentProduct = {
+          id: r.id,
+          name: r.name,
+          cat: r.cat,
+          priceNGN: Number(r.price_ngn),
+          priceUSD: Number(r.price_usd),
+          tag: r.tag,
+          category: r.category,
+          img: r.img,
+          pos: r.pos,
+          desc: r.description,
+          images: Array.isArray(r.images) ? r.images : [],
+          colors: Array.isArray(r.colors) ? r.colors : [],
+          sizes: Array.isArray(r.sizes) ? r.sizes : [],
+          active: r.active,
+        };
+      } else {
+        currentProduct = fallbackProducts.find((p) => p.id === id);
+        if (!currentProduct) {
+          return res.status(404).json({ success: false, error: "Product not found" });
+        }
+      }
+
+      // Build updated gallery from existingImages
+      let gallery = [];
+      if (existingImages) {
+        const parsed = typeof existingImages === "string" ? JSON.parse(existingImages) : existingImages;
+        if (Array.isArray(parsed)) {
+          gallery = parsed.filter((item) => item && (item.src || typeof item === "string")).map((item) => {
+            if (typeof item === "string") return { src: item, label: "View" };
+            return item;
+          });
+        }
+      } else if (currentProduct.images && currentProduct.images.length > 0) {
+        gallery = [...currentProduct.images];
+      }
+
+      // Handle mainImage replacement if uploaded
+      if (req.files && req.files.mainImage && req.files.mainImage[0]) {
+        const uploadedUrl = await uploadToCloudinary(
+          req.files.mainImage[0].buffer,
+          req.files.mainImage[0].mimetype
+        );
+        if (gallery.length > 0) {
+          gallery[0] = { ...gallery[0], src: uploadedUrl };
+        } else {
+          gallery.push({ src: uploadedUrl, label: "Front" });
+        }
+      } else if (mainImageUrl && mainImageUrl.trim()) {
+        if (gallery.length > 0) {
+          gallery[0] = { ...gallery[0], src: mainImageUrl.trim() };
+        } else {
+          gallery.push({ src: mainImageUrl.trim(), label: "Front" });
+        }
+      }
+
+      // Handle newly uploaded extra images
+      if (req.files && req.files.extraImages) {
+        for (let i = 0; i < req.files.extraImages.length; i++) {
+          const file = req.files.extraImages[i];
+          const uploadedUrl = await uploadToCloudinary(file.buffer, file.mimetype);
+          gallery.push({
+            src: uploadedUrl,
+            label: gallery.length === 1 ? "Back" : `Detail ${gallery.length}`,
+          });
+        }
+      }
+
+      // Handle extra URLs
+      if (extraImageUrls) {
+        const parsedUrls = typeof extraImageUrls === "string" ? JSON.parse(extraImageUrls) : extraImageUrls;
+        if (Array.isArray(parsedUrls)) {
+          parsedUrls.forEach((u) => {
+            if (u && typeof u === "string" && u.trim()) {
+              gallery.push({
+                src: u.trim(),
+                label: gallery.length === 1 ? "Back" : `Detail ${gallery.length}`,
+              });
+            } else if (u && u.src) {
+              gallery.push(u);
+            }
+          });
+        }
+      }
+
+      // Fallback if gallery is empty
+      if (gallery.length === 0 && currentProduct.img) {
+        gallery.push({ src: currentProduct.img, label: "Front" });
+      }
+
+      const finalMainImg = gallery.length > 0 ? gallery[0].src : currentProduct.img;
+
+      // Parse colors and sizes
+      const parsedColors = colors !== undefined
+        ? (typeof colors === "string" ? JSON.parse(colors) : colors)
+        : currentProduct.colors;
+      const parsedSizes = sizes !== undefined
+        ? (typeof sizes === "string" ? JSON.parse(sizes) : sizes)
+        : currentProduct.sizes;
+
+      const newPriceNGN = priceNGN !== undefined ? Number(priceNGN) : currentProduct.priceNGN;
+      const newPriceUSD = priceUSD !== undefined ? Number(priceUSD) : currentProduct.priceUSD;
+
+      const updatedProduct = {
+        id,
+        name: name !== undefined ? name.trim() : currentProduct.name,
+        cat: cat !== undefined ? cat.trim() : currentProduct.cat,
+        priceNGN: newPriceNGN,
+        priceUSD: newPriceUSD,
+        priceN: `₦${Number(newPriceNGN).toLocaleString("en-NG")}`,
+        priceD: `$${Number(newPriceUSD).toLocaleString("en-US")}`,
+        tag: tag !== undefined ? tag : currentProduct.tag,
+        category: category !== undefined ? category : currentProduct.category,
+        img: finalMainImg,
+        pos: pos !== undefined ? pos : (currentProduct.pos || "center 20%"),
+        desc: desc !== undefined ? desc : currentProduct.desc,
+        images: gallery,
+        colors: parsedColors || [],
+        sizes: parsedSizes || [],
+        active: active !== undefined ? (active === true || active === "true") : currentProduct.active,
+      };
+
+      if (hasDbUrl && pool) {
+        await pool.query(
+          `UPDATE products
+           SET name = $1, cat = $2, price_ngn = $3, price_usd = $4, tag = $5,
+               category = $6, img = $7, pos = $8, description = $9,
+               images = $10, colors = $11, sizes = $12, active = $13,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = $14`,
+          [
+            updatedProduct.name,
+            updatedProduct.cat,
+            updatedProduct.priceNGN,
+            updatedProduct.priceUSD,
+            updatedProduct.tag,
+            updatedProduct.category,
+            updatedProduct.img,
+            updatedProduct.pos,
+            updatedProduct.desc,
+            JSON.stringify(updatedProduct.images),
+            JSON.stringify(updatedProduct.colors),
+            JSON.stringify(updatedProduct.sizes),
+            updatedProduct.active,
+            id,
+          ]
+        );
+      } else {
+        const idx = fallbackProducts.findIndex((p) => p.id === id);
+        if (idx !== -1) {
+          fallbackProducts[idx] = { ...fallbackProducts[idx], ...updatedProduct };
+        }
+      }
+
+      console.log(`✏️ Product updated: ${updatedProduct.name} (${id})`);
+      res.json({ success: true, product: updatedProduct });
+    } catch (err) {
+      console.error("Error updating product:", err);
       res.status(500).json({ success: false, error: err.message });
     }
   }
