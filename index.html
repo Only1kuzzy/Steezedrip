@@ -73,7 +73,15 @@
     }
     </script>
     
+    <link rel="preload" href="/fonts/Algerian.ttf" as="font" type="font/ttf" crossorigin />
     <style>
+      @font-face {
+        font-family: 'Algerian';
+        src: local('Algerian'), url('/fonts/Algerian.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
       *, *::before, *::after { box-sizing: border-box; }
       html, body {
         margin: 0;

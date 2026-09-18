@@ -432,19 +432,7 @@ const LOOKBOOK = [
 /* ---------- small helpers ---------- */
 
 function Letters({ text }) {
-  return (
-    <>
-      {text.split("").map((ch, i) => (
-        <span
-          className="letter"
-          key={i}
-          style={{ animationDelay: `${(i % 9) * 0.35 + 0.2}s` }}
-        >
-          {ch}
-        </span>
-      ))}
-    </>
-  );
+  return <>{text}</>;
 }
 
 function useReveal() {
@@ -1516,6 +1504,14 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=Cormorant+Garamond:ital,wght@0,400;1,400;1,500&family=Work+Sans:wght@400;500;600;700&display=swap');
 
+        @font-face {
+          font-family: 'Algerian';
+          src: local('Algerian'), url('/fonts/Algerian.ttf') format('truetype');
+          font-weight: normal;
+          font-style: normal;
+          font-display: swap;
+        }
+
         .sd-root[data-theme="light"]{
           --bg:#faf8f3;
           --bg-soft:#f1ece1;
@@ -1568,9 +1564,9 @@ export default function App() {
         a{color:inherit; text-decoration:none;}
 
         .display{
-          font-family:'Big Shoulders Display', sans-serif;
+          font-family:'Algerian', 'Big Shoulders Display', serif;
           text-transform:uppercase;
-          letter-spacing:0.01em;
+          letter-spacing:0.02em;
         }
         .serif-italic{
           font-family:'Cormorant Garamond', serif;
@@ -1605,15 +1601,16 @@ export default function App() {
           -webkit-backdrop-filter:blur(6px);
         }
         .wordmark{
-          font-family:'Big Shoulders Display', sans-serif;
-          font-weight:800;
-          font-size:clamp(20px, 4.5vw, 24px);
+          font-family:'Algerian', 'Big Shoulders Display', serif;
+          font-weight:normal;
+          font-size:clamp(22px, 4.8vw, 28px);
           letter-spacing:0.04em;
           text-transform:uppercase;
-          color:var(--text);
+          color:var(--gold);
           cursor:pointer;
           display:inline-flex;
           align-items:center;
+          gap:12px;
           user-select:none;
           transition:opacity 0.2s ease, transform 0.2s ease;
           border:none;
@@ -1623,6 +1620,22 @@ export default function App() {
         .wordmark:hover{opacity:0.85; transform:scale(1.02);}
         .wordmark:active{transform:scale(0.98);}
         .wordmark span{color:var(--gold);}
+        .wordmark-logo{
+          display:inline-block;
+          width:22px;
+          height:42px;
+          background-color:var(--gold);
+          -webkit-mask:url('/logo-mask.png') no-repeat center / contain;
+          mask:url('/logo-mask.png') no-repeat center / contain;
+          flex-shrink:0;
+          vertical-align:middle;
+          transition:background-color 0.4s ease;
+        }
+        @supports not (mask: url('')) {
+          .wordmark-logo{
+            background:url('/logo-gold.png') no-repeat center / contain;
+          }
+        }
         .nav-links{
           display:flex; gap:28px; align-items:center;
         }
@@ -1708,25 +1721,12 @@ export default function App() {
 
         .drip-heading{
           display:flex; flex-wrap:wrap;
-          font-size:clamp(46px, 8vw, 108px);
-          line-height:0.92; font-weight:900; margin:0; color:var(--text);
+          font-family:'Algerian', 'Big Shoulders Display', serif;
+          font-size:clamp(44px, 7.5vw, 104px);
+          line-height:0.95; font-weight:normal; margin:0; color:var(--text);
+          letter-spacing:0.04em;
         }
         .drip-heading .letter{position:relative; display:inline-block;}
-        .drip-heading .letter::after{
-          content:''; position:absolute; left:50%; bottom:-6px;
-          width:5px; height:5px; border-radius:0 50% 50% 50%;
-          background:linear-gradient(160deg, var(--gold-soft), var(--gold) 60%, var(--rust));
-          transform:translateX(-50%) rotate(45deg);
-          opacity:0;
-          animation:drip 5s ease-in infinite;
-        }
-        @keyframes drip{
-          0%{opacity:0; bottom:-2px; height:5px; width:5px;}
-          8%{opacity:1;}
-          55%{bottom:-42px; height:15px; width:7px; opacity:0.95;}
-          85%{opacity:0.3;}
-          100%{bottom:-62px; opacity:0; height:17px; width:7px;}
-        }
 
         .tagline{
           font-size:clamp(18px,2.4vw,26px); margin:20px 0 30px; max-width:520px; color:var(--text-dim);
@@ -1799,24 +1799,10 @@ export default function App() {
         .scroll-cue .stick{width:34px; height:1px; background:linear-gradient(90deg, var(--gold), transparent); animation:pulse-stick 2.2s ease-in-out infinite;}
         @keyframes pulse-stick{0%,100%{opacity:0.3;}50%{opacity:1;}}
 
-        /* ---------- marquee ---------- */
-        .marquee{
-          border-top:1px solid var(--line); border-bottom:1px solid var(--line);
-          overflow:hidden; white-space:nowrap; padding:16px 0; background:var(--bg-soft);
-          position:relative; z-index:3;
-        }
-        .marquee-track{display:inline-block; animation:scroll-left 26s linear infinite;}
-        .marquee-track span{
-          font-family:'Big Shoulders Display'; font-size:18px; letter-spacing:0.08em;
-          text-transform:uppercase; margin:0 22px; color:var(--text-dim);
-        }
-        .marquee-track span.gold{color:var(--gold);}
-        @keyframes scroll-left{ from{transform:translateX(0);} to{transform:translateX(-50%);} }
-
         /* ---------- section shell ---------- */
         section.block{padding:min(12vw,110px) clamp(20px,6vw,80px);}
         .section-head{max-width:720px; margin-bottom:56px;}
-        .section-title{font-size:clamp(32px,5vw,58px); font-weight:800; margin:12px 0 0; line-height:1; color:var(--text);}
+        .section-title{font-family:'Algerian', 'Big Shoulders Display', serif; font-size:clamp(30px,4.5vw,52px); font-weight:normal; margin:12px 0 0; line-height:1.1; color:var(--text); letter-spacing:0.02em;}
 
         .filter-tabs{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:36px;}
         .filter-tab{
@@ -2083,7 +2069,7 @@ export default function App() {
         .wa-fab .label{font-size:12px; font-weight:700; letter-spacing:0.06em; padding-right:6px; display:none;}
 
         @media (prefers-reduced-motion: reduce){
-          .drip-heading .letter::after, .marquee-track, .hero-tag-inner, .wa-fab .ring, .scroll-cue .stick{
+          .hero-tag-inner, .wa-fab .ring, .scroll-cue .stick{
             animation:none !important;
           }
           .reveal{transition:none; opacity:1; transform:none;}
@@ -3236,7 +3222,8 @@ export default function App() {
           onClick={handleLogoClick}
           aria-label="SteezeDrip Homepage"
         >
-          STEEZE<span>DRIP</span>
+          <span className="wordmark-logo" aria-hidden="true" />
+          STEEZEDRIP
         </a>
         <div className="nav-links">
           {NAV_LINKS.map((l) => (
@@ -3340,7 +3327,8 @@ export default function App() {
             handleLogoClick(e);
           }}
         >
-          STEEZE<span>DRIP</span>
+          <span className="wordmark-logo" style={{ width: "24px", height: "46px" }} aria-hidden="true" />
+          STEEZEDRIP
         </a>
         {NAV_LINKS.map((l) => (
           <a
@@ -3524,7 +3512,7 @@ export default function App() {
                   <span className="eyebrow">Lagos-Rooted · World-Bound</span>
                 </div>
                 <h1 className="drip-heading">
-                  <Letters text="STEEZEDRIP" />
+                  STEEZEDRIP
                 </h1>
                 <p className="tagline">
                   <em>Steeze</em> is the swagger. <em>Drip</em> is the proof. Cut in small
@@ -3573,23 +3561,7 @@ export default function App() {
             </div>
           </section>
 
-      {/* ---------------- MARQUEE ---------------- */}
-      <div className="marquee">
-        <div className="marquee-track">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <React.Fragment key={i}>
-              <span className="gold">HANDCUT IN SMALL BATCHES</span>
-              <span>·</span>
-              <span>NO RESTOCKS</span>
-              <span>·</span>
-              <span className="gold">DM TO COP</span>
-              <span>·</span>
-              <span>STYLE FOR THOSE WHO KNOW</span>
-              <span>·</span>
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
+
 
       {/* ---------------- COLLECTION ---------------- */}
       <div id="main-content" tabIndex="-1" style={{ outline: "none" }} />
@@ -3885,7 +3857,8 @@ export default function App() {
             onClick={handleLogoClick}
             aria-label="SteezeDrip Homepage"
           >
-            STEEZE<span>DRIP</span>
+            <span className="wordmark-logo" aria-hidden="true" />
+            STEEZEDRIP
           </a>
           <p className="footer-tag">
             Cut in Lagos. Worn everywhere. Small drops, no restocks, DM-only checkout.
