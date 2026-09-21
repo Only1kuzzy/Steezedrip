@@ -7,6 +7,7 @@ import STEEZE_BACK_DETAIL_IMG from "./assets/steeze_back_detail.webp";
 import VARSITY_PATCH_DETAIL_IMG from "./assets/varsity_patch_detail.webp";
 import AdminDashboard from "./AdminDashboard.jsx";
 import LegalModal from "./LegalModal.jsx";
+import BrandLogo from "./BrandLogo.jsx";
 
 /* ------------------------------------------------------------------
    STEEZEDRIP — brand site, v2
@@ -1601,29 +1602,31 @@ export default function App() {
           -webkit-backdrop-filter:blur(6px);
         }
         .wordmark{
-          font-family:'Algerian', 'Big Shoulders Display', serif;
-          font-weight:normal;
-          font-size:clamp(22px, 4.8vw, 28px);
-          letter-spacing:0.04em;
-          text-transform:uppercase;
           color:var(--gold);
           cursor:pointer;
           display:inline-flex;
           align-items:center;
-          gap:12px;
           user-select:none;
-          transition:opacity 0.2s ease, transform 0.2s ease;
+          transition:opacity 0.2s ease, transform 0.2s ease, color 0.4s ease;
           border:none;
           background:none;
           padding:4px 0;
+          text-decoration:none;
         }
-        .wordmark:hover{opacity:0.85; transform:scale(1.02);}
+        .wordmark:hover{opacity:0.88; transform:scale(1.02);}
         .wordmark:active{transform:scale(0.98);}
-        .wordmark span{color:var(--gold);}
+        .brand-logo{
+          display:inline-block;
+          height:clamp(22px, 3.8vw, 28px);
+          width:auto;
+          color:var(--gold);
+          transition:color 0.4s ease;
+          vertical-align:middle;
+        }
         .wordmark-logo{
           display:inline-block;
-          width:22px;
-          height:42px;
+          height:clamp(22px, 3.8vw, 28px);
+          width:calc(clamp(22px, 3.8vw, 28px) * 5.68);
           background-color:var(--gold);
           -webkit-mask:url('/logo-mask.png') no-repeat center / contain;
           mask:url('/logo-mask.png') no-repeat center / contain;
@@ -3220,10 +3223,9 @@ export default function App() {
           href="/"
           className="wordmark"
           onClick={handleLogoClick}
-          aria-label="SteezeDrip Homepage"
+          aria-label="Steeze Homepage"
         >
-          <span className="wordmark-logo" aria-hidden="true" />
-          STEEZEDRIP
+          <BrandLogo className="brand-logo" />
         </a>
         <div className="nav-links">
           {NAV_LINKS.map((l) => (
@@ -3321,14 +3323,14 @@ export default function App() {
         <a
           href="/"
           className="wordmark"
-          style={{ fontSize: "28px", marginBottom: "8px" }}
+          style={{ marginBottom: "14px" }}
           onClick={(e) => {
             setMenuOpen(false);
             handleLogoClick(e);
           }}
+          aria-label="Steeze Homepage"
         >
-          <span className="wordmark-logo" style={{ width: "24px", height: "46px" }} aria-hidden="true" />
-          STEEZEDRIP
+          <BrandLogo className="brand-logo" style={{ height: "30px" }} />
         </a>
         {NAV_LINKS.map((l) => (
           <a
@@ -3855,10 +3857,9 @@ export default function App() {
             href="/"
             className="wordmark"
             onClick={handleLogoClick}
-            aria-label="SteezeDrip Homepage"
+            aria-label="Steeze Homepage"
           >
-            <span className="wordmark-logo" aria-hidden="true" />
-            STEEZEDRIP
+            <BrandLogo className="brand-logo" style={{ height: "26px" }} />
           </a>
           <p className="footer-tag">
             Cut in Lagos. Worn everywhere. Small drops, no restocks, DM-only checkout.
