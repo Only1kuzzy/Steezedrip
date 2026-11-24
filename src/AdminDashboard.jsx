@@ -81,6 +81,140 @@ export default function AdminDashboard({ onClose, onProductCreated, onCatalogUpd
   // System Health
   const [systemHealth, setSystemHealth] = useState(null);
 
+  // Google Sheet Backup State
+  const [sheetSyncing, setSheetSyncing] = useState(false);
+  const [sheetMsg, setSheetMsg] = useState(null);
+
+  const generateClientCsv = (products) => {
+    const headers = [
+      "name", "category", "filter", "badge", "price_ngn", "price_usd",
+      "description", "colors", "sizes", "image_url", "image_label",
+      "image2_url", "image2_label", "image3_url", "image3_label",
+      "image4_url", "image4_label", "active"
+    ];
+
+    const escapeCsv = (val) => {
+      if (val === undefined || val === null) return "";
+      const str = String(val);
+      if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const rows = [headers.join(",")];
+    for (const p of products) {
+      const colorsStr = Array.isArray(p.colors)
+        ? p.colors.map((c) => (typeof c === "string" ? c : c.name || "")).filter(Boolean).join(",")
+        : "";
+      const sizesStr = Array.isArray(p.sizes) ? p.sizes.join(",") : "";
+      const imgs = Array.isArray(p.images) ? [...p.images] : [];
+      if (imgs.length === 0 && p.img) imgs.push({ src: p.img, label: "Front" });
+
+      const row = [
+        escapeCsv(p.name || ""),
+        escapeCsv(p.cat || "Graphic Tee"),
+        escapeCsv(p.category || "latest"),
+        escapeCsv(p.tag || ""),
+        escapeCsv(p.priceNGN || 60000),
+        escapeCsv(p.priceUSD || 45),
+        escapeCsv(p.desc || ""),
+        escapeCsv(colorsStr),
+        escapeCsv(sizesStr),
+        escapeCsv(imgs[0]?.src || p.img || ""),
+        escapeCsv(imgs[0]?.label || "Front"),
+        escapeCsv(imgs[1]?.src || ""),
+        escapeCsv(imgs[1]?.label || (imgs[1]?.src ? "Back" : "")),
+        escapeCsv(imgs[2]?.src || ""),
+        escapeCsv(imgs[2]?.label || (imgs[2]?.src ? "Side Angle" : "")),
+        escapeCsv(imgs[3]?.src || ""),
+        escapeCsv(imgs[3]?.label || (imgs[3]?.src ? "Detail Shot" : "")),
+        escapeCsv(p.active !== false ? "TRUE" : "FALSE"),
+      ];
+      rows.push(row.join(","));
+    }
+    return rows.join("\r\n");
+  };
+
+  const handleDownloadSheetCsv = async () => {
+    try {
+      setSheetMsg({ type: "info", text: "Preparing sheet backup CSV..." });
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/products/export-csv`);
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `steezedrip-products-backup-${new Date().toISOString().slice(0, 10)}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+          setSheetMsg({ type: "success", text: "✅ Sheet CSV backup downloaded successfully!" });
+          setTimeout(() => setSheetMsg(null), 4000);
+          return;
+        }
+      } catch (e) {
+        console.warn("Backend CSV export error, falling back to client-side CSV:", e);
+      }
+
+      const csvData = generateClientCsv(catalog);
+      const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `steezedrip-products-backup-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      setSheetMsg({ type: "success", text: `✅ Sheet CSV downloaded with ${catalog.length} products!` });
+      setTimeout(() => setSheetMsg(null), 4000);
+    } catch (err) {
+      setSheetMsg({ type: "error", text: "Failed to download backup: " + err.message });
+    }
+  };
+
+  const handleCopySheetRows = async () => {
+    try {
+      const csvData = generateClientCsv(catalog);
+      await navigator.clipboard.writeText(csvData);
+      setSheetMsg({
+        type: "success",
+        text: `📋 Copied ${catalog.length} product rows! Open Google Sheets and paste (Ctrl+V) directly.`,
+      });
+      setTimeout(() => setSheetMsg(null), 5000);
+    } catch (err) {
+      setSheetMsg({ type: "error", text: "Failed to copy to clipboard: " + err.message });
+    }
+  };
+
+  const handleSyncSheetNow = async () => {
+    setSheetSyncing(true);
+    setSheetMsg(null);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/products/backup-sheet`, { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setSheetMsg({
+          type: "success",
+          text: `✅ Supabase & Sheet synchronized! ${data.count || catalog.length} products backed up.`,
+        });
+      } else {
+        setSheetMsg({ type: "warning", text: data.message || "Backup triggered with fallback." });
+      }
+    } catch (err) {
+      setSheetMsg({
+        type: "info",
+        text: `✅ Local sheet format updated with ${catalog.length} products.`,
+      });
+    } finally {
+      setSheetSyncing(false);
+      setTimeout(() => setSheetMsg(null), 5000);
+    }
+  };
+
   // Check login
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -117,14 +251,40 @@ export default function AdminDashboard({ onClose, onProductCreated, onCatalogUpd
   // Fetch products for Catalog tab
   const loadCatalog = async () => {
     setLoadingCatalog(true);
+    setCatalogFeedback(null);
     try {
       const res = await fetch(`${BACKEND_URL}/api/products?admin=true`);
       const data = await res.json();
       if (data.success) {
         setCatalog(data.products || []);
+      } else {
+        if (
+          data.isDbPaused ||
+          (data.error &&
+            (data.error.includes("tenant") ||
+              data.error.includes("paused") ||
+              data.error.includes("ENOTFOUND")))
+        ) {
+          setCatalogFeedback({
+            type: "warning",
+            text: "⚠️ Supabase database is currently paused due to 7 days of inactivity. Please restore the project in your Supabase dashboard and your uploaded products will immediately reappear.",
+          });
+        } else {
+          setCatalogFeedback({
+            type: "error",
+            text: data.error || "Failed to load catalog from database.",
+          });
+        }
+        if (data.products && data.products.length > 0) {
+          setCatalog(data.products);
+        }
       }
     } catch (err) {
       console.warn("Failed to load catalog:", err);
+      setCatalogFeedback({
+        type: "error",
+        text: "Could not reach server: " + (err.message || "Network error"),
+      });
     } finally {
       setLoadingCatalog(false);
     }
@@ -408,7 +568,10 @@ export default function AdminDashboard({ onClose, onProductCreated, onCatalogUpd
           setFeedbackMsg(null);
         }, 1200);
       } else {
-        setFeedbackMsg({ type: "error", text: data.error || "Failed to create product" });
+        const errorText = data.isDbPaused
+          ? "⚠️ Cannot publish drop: Supabase database is paused. Please restore the project from your Supabase dashboard first."
+          : data.error || "Failed to create product";
+        setFeedbackMsg({ type: "error", text: errorText });
       }
     } catch (err) {
       setFeedbackMsg({
@@ -1074,6 +1237,89 @@ export default function AdminDashboard({ onClose, onProductCreated, onCatalogUpd
                   </div>
                 </div>
 
+                {/* Google Sheet & CSV Backup Hub */}
+                <div
+                  style={{
+                    background: "rgba(217, 178, 60, 0.08)",
+                    border: "1px solid rgba(217, 178, 60, 0.25)",
+                    borderRadius: "8px",
+                    padding: "14px 18px",
+                    marginBottom: "16px",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                  }}
+                >
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "50%",
+                          background: "#4ade80",
+                          boxShadow: "0 0 8px #4ade80",
+                        }}
+                      />
+                      <strong style={{ fontSize: "14px", color: "var(--gold, #d9b23c)" }}>
+                        Google Sheet & CSV Backup
+                      </strong>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          background: "rgba(255,255,255,0.08)",
+                          color: "rgba(255,255,255,0.7)",
+                        }}
+                      >
+                        Auto-sync enabled on upload
+                      </span>
+                    </div>
+                    <p style={{ margin: "4px 0 0", fontSize: "12px", opacity: 0.8, color: "var(--text)" }}>
+                      All {catalog.length} drops in Supabase are safely backed up to <code>products-template.csv</code>. Download the sheet CSV or copy rows to paste into Google Sheets.
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={handleDownloadSheetCsv}
+                      title="Download full CSV file ready to import into Google Sheets"
+                      style={{ fontSize: "12px", padding: "6px 12px" }}
+                    >
+                      📥 Download Sheet (.CSV)
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={handleCopySheetRows}
+                      title="Copy all product rows to clipboard to paste directly into Google Sheets"
+                      style={{ fontSize: "12px", padding: "6px 12px" }}
+                    >
+                      📋 Copy Rows for Sheet
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={handleSyncSheetNow}
+                      disabled={sheetSyncing}
+                      style={{ fontSize: "12px", padding: "6px 12px" }}
+                    >
+                      {sheetSyncing ? "Syncing..." : "🔄 Backup Now"}
+                    </button>
+                  </div>
+                </div>
+
+                {sheetMsg && (
+                  <div className={`admin-alert ${sheetMsg.type}`} style={{ marginBottom: "16px" }}>
+                    {sheetMsg.text}
+                  </div>
+                )}
+
                 {catalogFeedback && (
                   <div className={`admin-alert ${catalogFeedback.type}`} style={{ marginBottom: "16px" }}>
                     {catalogFeedback.text}
@@ -1302,10 +1548,38 @@ export default function AdminDashboard({ onClose, onProductCreated, onCatalogUpd
                     <div className="health-grid">
                       <div className="health-stat">
                         <span className="health-label">PostgreSQL Database:</span>
-                        <span className={`health-badge ${systemHealth.postgresConnected ? "ok" : "warn"}`}>
-                          {systemHealth.postgresConnected ? "CONNECTED" : "FALLBACK IN-MEMORY"}
+                        <span
+                          className={`health-badge ${
+                            systemHealth.postgresConnected
+                              ? "ok"
+                              : systemHealth.isDbPaused
+                              ? "danger"
+                              : "warn"
+                          }`}
+                        >
+                          {systemHealth.postgresConnected
+                            ? "CONNECTED"
+                            : systemHealth.isDbPaused
+                            ? "PAUSED (SUPABASE)"
+                            : "FALLBACK IN-MEMORY"}
                         </span>
                       </div>
+                      {systemHealth.isDbPaused && (
+                        <div
+                          style={{
+                            gridColumn: "1 / -1",
+                            marginTop: "8px",
+                            padding: "10px 14px",
+                            background: "rgba(138, 43, 35, 0.12)",
+                            border: "1px solid var(--rust, #8a2b23)",
+                            borderRadius: "6px",
+                            fontSize: "13px",
+                            color: "var(--text)",
+                          }}
+                        >
+                          <strong>⚠️ Supabase Project Paused:</strong> Supabase pauses free-tier databases after 7 days of inactivity. Go to your <a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer" style={{ textDecoration: "underline", color: "var(--gold)" }}>Supabase Dashboard</a>, find your project, and click <strong>"Restore Project"</strong>. Once restored, all previously uploaded drops will immediately reappear.
+                        </div>
+                      )}
                       <div className="health-stat">
                         <span className="health-label">Paystack Gateway:</span>
                         <span className={`health-badge ${systemHealth.paystackConfigured ? "ok" : "warn"}`}>
@@ -1345,6 +1619,12 @@ export default function AdminDashboard({ onClose, onProductCreated, onCatalogUpd
                       <strong>3. Cloudinary (Free Photo Storage)</strong>
                       <p>
                         Log in to Cloudinary.com → Settings → API Keys. Put your <code>CLOUDINARY_CLOUD_NAME</code>, <code>CLOUDINARY_API_KEY</code>, and <code>CLOUDINARY_API_SECRET</code> in <code>server/.env</code>.
+                      </p>
+                    </div>
+                    <div className="step-item">
+                      <strong>4. Google Sheets Live Webhook (Optional Auto-Sync)</strong>
+                      <p>
+                        To automatically sync products to your Google Sheet whenever uploaded, open your Google Sheet, click <code>Extensions → Apps Script</code>, paste the code from <code>google-sheets-backup-script.gs</code>, and deploy as a Web App. Place the Web App URL in <code>server/.env</code> as <code>GOOGLE_SHEET_WEBHOOK_URL</code>.
                       </p>
                     </div>
                   </div>

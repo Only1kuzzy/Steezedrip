@@ -370,9 +370,15 @@ function parseProductsCSV(csvText) {
       const label1 = getVal(row, "image_label", "imagelabel", "image1_label", "label1") || "Front";
       const rawImg2 = getVal(row, "image2_url", "image2url", "image2", "photo2");
       const label2 = getVal(row, "image2_label", "image2label", "label2") || "Back";
+      const rawImg3 = getVal(row, "image3_url", "image3url", "image3", "photo3");
+      const label3 = getVal(row, "image3_label", "image3label", "label3") || "Side Angle";
+      const rawImg4 = getVal(row, "image4_url", "image4url", "image4", "photo4");
+      const label4 = getVal(row, "image4_label", "image4label", "label4") || "Detail Shot";
 
       let img1 = normalizeImgUrl(rawImg1);
       let img2 = normalizeImgUrl(rawImg2);
+      let img3 = normalizeImgUrl(rawImg3);
+      let img4 = normalizeImgUrl(rawImg4);
 
       if (isNotAverage) {
         if (!img1) img1 = DETAIL_IMG;
@@ -383,6 +389,8 @@ function parseProductsCSV(csvText) {
       const images = [];
       if (img1) images.push({ src: img1, pos: "center 20%", label: label1 });
       if (img2) images.push({ src: img2, pos: "center 20%", label: label2 });
+      if (img3) images.push({ src: img3, pos: "center 20%", label: label3 });
+      if (img4) images.push({ src: img4, pos: "center 20%", label: label4 });
       if (images.length === 0) images.push({ src: mainImg, pos: "center 20%", label: "Front" });
 
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || `item-${r}`;

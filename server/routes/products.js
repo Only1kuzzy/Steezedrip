@@ -2,6 +2,11 @@ import express from "express";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { pool, hasDbUrl } from "../db.js";
+import {
+  backupProductsToCsv,
+  generateProductsCsv,
+  syncToGoogleSheetWebhook,
+} from "../utils/csvBackup.js";
 
 const router = express.Router();
 
@@ -139,38 +144,135 @@ async function uploadToCloudinary(fileBuffer, mimeType) {
   });
 }
 
+// Helper: fetch all products for sheet backup
+export async function fetchAllProductsForBackup() {
+  if (hasDbUrl && pool) {
+    try {
+      const result = await pool.query("SELECT * FROM products ORDER BY created_at DESC");
+      if (result.rows && result.rows.length > 0) {
+        return result.rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          cat: r.cat,
+          priceNGN: Number(r.price_ngn),
+          priceUSD: Number(r.price_usd),
+          priceN: `₦${Number(r.price_ngn).toLocaleString("en-NG")}`,
+          priceD: `$${Number(r.price_usd).toLocaleString("en-US")}`,
+          tag: r.tag,
+          category: r.category,
+          img: r.img,
+          pos: r.pos || "center 20%",
+          desc: r.description,
+          images: Array.isArray(r.images) ? r.images : [],
+          colors: Array.isArray(r.colors) ? r.colors : [],
+          sizes: Array.isArray(r.sizes) ? r.sizes : [],
+          active: r.active,
+        }));
+      }
+    } catch (err) {
+      console.warn("Could not query DB for sheet backup:", err.message);
+    }
+  }
+  return fallbackProducts;
+}
+
+export async function triggerSheetBackup() {
+  try {
+    const products = await fetchAllProductsForBackup();
+    const res = backupProductsToCsv(products);
+    syncToGoogleSheetWebhook(products, "sync").catch(() => {});
+    return res;
+  } catch (err) {
+    console.error("Auto sheet backup error:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+// GET /api/products/export-csv - Download or stream the latest sheet CSV
+router.get("/export-csv", async (req, res) => {
+  try {
+    const products = await fetchAllProductsForBackup();
+    const csvContent = generateProductsCsv(products);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="steezedrip-products-${Date.now()}.csv"`
+    );
+    return res.send(csvContent);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/products/backup-sheet - Manually trigger sheet backup from Supabase
+router.post("/backup-sheet", async (req, res) => {
+  try {
+    const products = await fetchAllProductsForBackup();
+    const result = backupProductsToCsv(products);
+    syncToGoogleSheetWebhook(products, "sync").catch(() => {});
+    res.json({
+      success: true,
+      message: `Backed up ${products.length} products to sheet CSV.`,
+      count: products.length,
+      ...result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // GET /api/products - Fetch all active products
 router.get("/", async (req, res) => {
   try {
     const includeInactive = req.query.admin === "true";
 
     if (hasDbUrl && pool) {
-      const query = includeInactive
-        ? "SELECT * FROM products ORDER BY created_at DESC"
-        : "SELECT * FROM products WHERE active = TRUE ORDER BY created_at DESC";
-      const result = await pool.query(query);
+      try {
+        const query = includeInactive
+          ? "SELECT * FROM products ORDER BY created_at DESC"
+          : "SELECT * FROM products WHERE active = TRUE ORDER BY created_at DESC";
+        const result = await pool.query(query);
 
-      // Transform rows to match frontend schema
-      const products = result.rows.map((r) => ({
-        id: r.id,
-        name: r.name,
-        cat: r.cat,
-        priceNGN: Number(r.price_ngn),
-        priceUSD: Number(r.price_usd),
-        priceN: `₦${Number(r.price_ngn).toLocaleString("en-NG")}`,
-        priceD: `$${Number(r.price_usd).toLocaleString("en-US")}`,
-        tag: r.tag,
-        category: r.category,
-        img: r.img,
-        pos: r.pos || "center 20%",
-        desc: r.description,
-        images: Array.isArray(r.images) ? r.images : [],
-        colors: Array.isArray(r.colors) ? r.colors : [],
-        sizes: Array.isArray(r.sizes) ? r.sizes : [],
-        active: r.active,
-      }));
+        // Transform rows to match frontend schema
+        const products = result.rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          cat: r.cat,
+          priceNGN: Number(r.price_ngn),
+          priceUSD: Number(r.price_usd),
+          priceN: `₦${Number(r.price_ngn).toLocaleString("en-NG")}`,
+          priceD: `$${Number(r.price_usd).toLocaleString("en-US")}`,
+          tag: r.tag,
+          category: r.category,
+          img: r.img,
+          pos: r.pos || "center 20%",
+          desc: r.description,
+          images: Array.isArray(r.images) ? r.images : [],
+          colors: Array.isArray(r.colors) ? r.colors : [],
+          sizes: Array.isArray(r.sizes) ? r.sizes : [],
+          active: r.active,
+        }));
 
-      return res.json({ success: true, count: products.length, products });
+        return res.json({ success: true, count: products.length, products, source: "postgres" });
+      } catch (dbErr) {
+        console.error("PostgreSQL query failed:", dbErr.message);
+        const isPaused = Boolean(
+          dbErr.message.includes("tenant") || dbErr.message.includes("ENOTFOUND")
+        );
+        if (includeInactive) {
+          return res.status(503).json({
+            success: false,
+            error: isPaused
+              ? "Supabase database is currently paused due to inactivity. Please restore the project from your Supabase dashboard."
+              : `Database connection error: ${dbErr.message}`,
+            isDbPaused: isPaused,
+            products: fallbackProducts,
+            source: "fallback",
+          });
+        }
+        // For storefront, seamlessly deliver fallback items instead of crashing with 500
+      }
     }
 
     // Fallback in-memory
@@ -183,7 +285,7 @@ router.get("/", async (req, res) => {
       priceD: p.priceD || `$${Number(p.priceUSD || 45).toLocaleString("en-US")}`,
     }));
 
-    return res.json({ success: true, count: items.length, products: items });
+    return res.json({ success: true, count: items.length, products: items, source: "fallback" });
   } catch (err) {
     console.error("Error fetching products:", err);
     res.status(500).json({ success: false, error: err.message });
@@ -308,32 +410,47 @@ router.post(
       };
 
       if (hasDbUrl && pool) {
-        await pool.query(
-          `INSERT INTO products (id, name, cat, price_ngn, price_usd, tag, category, img, pos, description, images, colors, sizes, active)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
-          [
-            newProduct.id,
-            newProduct.name,
-            newProduct.cat,
-            newProduct.priceNGN,
-            newProduct.priceUSD,
-            newProduct.tag,
-            newProduct.category,
-            newProduct.img,
-            newProduct.pos,
-            newProduct.desc,
-            JSON.stringify(newProduct.images),
-            JSON.stringify(newProduct.colors),
-            JSON.stringify(newProduct.sizes),
-            newProduct.active,
-          ]
-        );
+        try {
+          await pool.query(
+            `INSERT INTO products (id, name, cat, price_ngn, price_usd, tag, category, img, pos, description, images, colors, sizes, active)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+            [
+              newProduct.id,
+              newProduct.name,
+              newProduct.cat,
+              newProduct.priceNGN,
+              newProduct.priceUSD,
+              newProduct.tag,
+              newProduct.category,
+              newProduct.img,
+              newProduct.pos,
+              newProduct.desc,
+              JSON.stringify(newProduct.images),
+              JSON.stringify(newProduct.colors),
+              JSON.stringify(newProduct.sizes),
+              newProduct.active,
+            ]
+          );
+        } catch (dbErr) {
+          console.error("Database INSERT error:", dbErr.message);
+          const isPaused = Boolean(
+            dbErr.message.includes("tenant") || dbErr.message.includes("ENOTFOUND")
+          );
+          return res.status(503).json({
+            success: false,
+            error: isPaused
+              ? "Supabase database is paused due to inactivity. Please restore the project from your Supabase dashboard."
+              : `Database error: ${dbErr.message}`,
+            isDbPaused: isPaused,
+          });
+        }
       } else {
         fallbackProducts.unshift(newProduct);
       }
 
       console.log(`✨ New drop created: ${newProduct.name} (${newProduct.id}) with ${galleryImages.length} photos`);
       res.status(201).json({ success: true, product: newProduct });
+      triggerSheetBackup();
     } catch (err) {
       console.error("Error creating product:", err);
       res.status(500).json({ success: false, error: err.message });
@@ -532,6 +649,7 @@ router.put(
 
       console.log(`✏️ Product updated: ${updatedProduct.name} (${id})`);
       res.json({ success: true, product: updatedProduct });
+      triggerSheetBackup();
     } catch (err) {
       console.error("Error updating product:", err);
       res.status(500).json({ success: false, error: err.message });
@@ -553,13 +671,17 @@ router.patch("/:id/toggle", async (req, res) => {
         newStatus,
         id,
       ]);
-      return res.json({ success: true, id, active: newStatus });
+      res.json({ success: true, id, active: newStatus });
+      triggerSheetBackup();
+      return;
     }
 
     const item = fallbackProducts.find((p) => p.id === id);
     if (!item) return res.status(404).json({ success: false, error: "Product not found" });
     item.active = !item.active;
-    return res.json({ success: true, id, active: item.active });
+    res.json({ success: true, id, active: item.active });
+    triggerSheetBackup();
+    return;
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -574,11 +696,15 @@ router.delete("/:id", async (req, res) => {
       if (result.rowCount === 0) {
         return res.status(404).json({ success: false, error: "Product not found" });
       }
-      return res.json({ success: true, message: `Product ${id} deleted` });
+      res.json({ success: true, message: `Product ${id} deleted` });
+      triggerSheetBackup();
+      return;
     }
 
     fallbackProducts = fallbackProducts.filter((p) => p.id !== id);
-    return res.json({ success: true, message: `Product ${id} deleted` });
+    res.json({ success: true, message: `Product ${id} deleted` });
+    triggerSheetBackup();
+    return;
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

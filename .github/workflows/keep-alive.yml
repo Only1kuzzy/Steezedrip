@@ -1,0 +1,16 @@
+name: SteezeDrip Keep-Alive & Supabase Ping
+
+on:
+  schedule:
+    # Runs every 10 minutes to prevent Render free-tier sleep (15m limit) and Supabase auto-pause
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend and Supabase
+        run: |
+          RESPONSE=$(curl -s "https://steezedrip.onrender.com/api/health")
+          echo "Health Check Response: $RESPONSE"

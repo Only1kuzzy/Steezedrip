@@ -3,7 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
-import { initDb, hasDbUrl } from "./db.js";
+import { initDb, hasDbUrl, pool } from "./db.js";
 import productsRouter from "./routes/products.js";
 import paymentsRouter from "./routes/payments.js";
 import adminRouter from "./routes/admin.js";
@@ -55,11 +55,30 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Health Check
-app.get("/api/health", (req, res) => {
+app.get("/api/health", async (req, res) => {
+  let dbStatus = "not_configured";
+  let dbError = null;
+  if (hasDbUrl && pool) {
+    try {
+      await pool.query("SELECT 1");
+      dbStatus = "connected";
+    } catch (err) {
+      dbStatus = "error";
+      dbError = err.message;
+    }
+  }
+
+  const isDbPaused = Boolean(
+    dbError && (dbError.includes("tenant") || dbError.includes("ENOTFOUND"))
+  );
+
   res.json({
-    status: "ok",
+    status: dbStatus === "connected" ? "ok" : "degraded",
     timestamp: new Date().toISOString(),
-    postgresConnected: hasDbUrl,
+    postgresStatus: dbStatus,
+    postgresConnected: dbStatus === "connected",
+    postgresError: dbError,
+    isDbPaused,
     paystackConfigured: Boolean(process.env.PAYSTACK_SECRET_KEY),
     cloudinaryConfigured: Boolean(process.env.CLOUDINARY_CLOUD_NAME),
   });
