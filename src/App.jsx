@@ -1522,32 +1522,72 @@ export default function App() {
         }
 
         .sd-root[data-theme="light"]{
-          --bg:#faf8f3;
-          --bg-soft:#f1ece1;
-          --panel:#ffffff;
-          --text:#17140f;
-          --text-dim:#6b6558;
-          --gold:#a1721f;
-          --gold-soft:#7d5814;
-          --gold-glow: rgba(161,114,31,0.14);
-          --rust:#8a3b2b;
-          --line: rgba(23,20,15,0.14);
-          --nav-fade: rgba(250,248,243,0.9), rgba(250,248,243,0);
-          --shadow: 0 18px 40px rgba(23,20,15,0.10);
+          /* Brand Theme Tokens: Deep Burgundy & Dark Oxblood Streetwear Aesthetic */
+          --primary: #6E141A;             /* Deep Burgundy */
+          --primary-hover: #4A0A0E;       /* Dark Oxblood */
+          --accent: #6E141A;
+          --accent-hover: #4A0A0E;
+          --accent-glow: rgba(110, 20, 26, 0.16);
+
+          /* Surfaces & Backgrounds */
+          --bg: #F7F5F0;                  /* Subtle warm off-white / light section */
+          --bg-soft: #F7F5F0;             /* Subtle drawer & section background */
+          --panel: #FFFFFF;               /* Content panels & cards */
+          --product-card-bg: #FFFFFF;     /* Pure white for seamless isolated photo blending */
+
+          /* Header & Footer */
+          --announcement-bg: #0D0D0D;     /* Deep black announcement bar */
+          --announcement-text: #FFFFFF;
+          --footer-bg: #0D0D0D;           /* Deep black footer */
+          --footer-text: #F7F5F0;
+          --footer-dim: #999999;
+
+          /* Typography & Lines */
+          --text: #17140f;
+          --text-dim: #6b6558;
+          --line: rgba(23,20,15,0.12);
+          --nav-fade: rgba(247,245,240,0.95), rgba(247,245,240,0);
+          --shadow: 0 18px 40px rgba(110,20,26,0.08);
+
+          /* Backward-compatible aliases for existing elements */
+          --gold: var(--primary);
+          --gold-soft: var(--primary-hover);
+          --gold-glow: var(--accent-glow);
+          --rust: var(--primary);
         }
         .sd-root[data-theme="dark"]{
-          --bg:#0b0b0d;
-          --bg-soft:#141311;
-          --panel:#1a1815;
-          --text:#ece6d8;
-          --text-dim:#b0a894;
-          --gold:#c9a24b;
-          --gold-soft:#e8cf94;
-          --gold-glow: rgba(201,162,75,0.16);
-          --rust:#c9846f;
-          --line: rgba(236,230,216,0.14);
-          --nav-fade: rgba(11,11,13,0.9), rgba(11,11,13,0);
-          --shadow: 0 18px 40px rgba(0,0,0,0.45);
+          /* Brand Theme Tokens (Dark Mode) */
+          --primary: #8E1F27;             /* Vibrant burgundy for readability on dark */
+          --primary-hover: #6E141A;       /* Deep burgundy */
+          --accent: #8E1F27;
+          --accent-hover: #6E141A;
+          --accent-glow: rgba(142, 31, 39, 0.25);
+
+          /* Surfaces & Backgrounds */
+          --bg: #0D0D0D;                  /* Deep dark */
+          --bg-soft: #161616;             /* Subtle drawer & dark section */
+          --panel: #1A1A1A;
+          --product-card-bg: #FFFFFF;     /* Kept pure white as requested for isolated mockups */
+
+          /* Header & Footer */
+          --announcement-bg: #0D0D0D;
+          --announcement-text: #FFFFFF;
+          --footer-bg: #0D0D0D;
+          --footer-text: #F7F5F0;
+          --footer-dim: #999999;
+
+          /* Typography & Lines */
+          --text: #ece6d8;
+          --text-dim: #b0a894;
+          --line: rgba(255,255,255,0.12);
+          --nav-fade: rgba(13,13,13,0.95), rgba(13,13,13,0);
+          --shadow: 0 18px 40px rgba(0,0,0,0.50);
+
+          /* Backward-compatible aliases */
+          --gold: var(--primary);
+          --gold-soft: var(--primary-hover);
+          --gold-glow: var(--accent-glow);
+          --rust: var(--primary);
         }
 
         *{box-sizing:border-box;}
@@ -1599,15 +1639,40 @@ export default function App() {
         }
         .reveal.in-view{opacity:1; transform:translateY(0);}
 
+        /* ---------- top announcement bar ---------- */
+        .top-announcement-bar{
+          position:fixed; top:0; left:0; right:0; height:34px; z-index:70;
+          background:var(--announcement-bg, #0D0D0D);
+          color:var(--announcement-text, #FFFFFF);
+          display:flex; align-items:center; justify-content:center;
+          padding:0 clamp(14px, 4vw, 32px);
+          font-family:'Work Sans', sans-serif;
+          font-size:10.5px; font-weight:700; letter-spacing:0.18em;
+          text-transform:uppercase;
+          border-bottom:1px solid rgba(255,255,255,0.08);
+          user-select:none;
+        }
+        .announcement-inner{
+          display:flex; align-items:center; justify-content:center; gap:12px;
+          white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        }
+        .announcement-badge{
+          color:var(--primary); font-weight:800; letter-spacing:0.2em;
+        }
+        .announcement-dot{
+          color:rgba(255,255,255,0.3); font-size:8px;
+        }
+
         /* ---------- nav ---------- */
         .nav{
-          position:fixed; top:0; left:0; right:0; z-index:60;
+          position:fixed; top:34px; left:0; right:0; z-index:60;
           display:flex; align-items:center; justify-content:space-between;
-          padding:clamp(14px, 3vw, 22px) clamp(16px, 5vw, 64px);
+          padding:clamp(12px, 2.6vw, 18px) clamp(16px, 5vw, 64px);
           width:100%; max-width:100%;
           background:linear-gradient(to bottom, var(--nav-fade));
           backdrop-filter:blur(6px);
           -webkit-backdrop-filter:blur(6px);
+          transition:top 0.25s ease;
         }
         .wordmark{
           color:var(--gold);
@@ -1621,7 +1686,7 @@ export default function App() {
           padding:4px 0;
           text-decoration:none;
         }
-        .wordmark:hover{opacity:0.88; transform:scale(1.02);}
+        .wordmark:hover{opacity:0.88; transform:scale(1.02); color:var(--primary-hover);}
         .wordmark:active{transform:scale(0.98);}
         .brand-logo{
           display:inline-block;
@@ -1655,17 +1720,19 @@ export default function App() {
           font-weight:600; color:var(--text-dim);
           position:relative; padding-bottom:4px;
         }
-        .nav-links a:hover{color:var(--text);}
+        .nav-links a:hover{color:var(--primary);}
         .nav-links a::after{
           content:''; position:absolute; left:0; bottom:0; height:1px; width:0;
-          background:var(--gold); transition:width 0.3s ease;
+          background:var(--primary); transition:width 0.3s ease;
         }
         .nav-links a:hover::after{width:100%;}
         .nav-cta{
-          border:1px solid var(--gold); color:var(--gold) !important;
+          border:1px solid var(--primary); color:var(--primary) !important;
           padding:9px 18px; border-radius:2px; font-weight:700;
+          background:transparent;
+          transition:all 0.25s ease;
         }
-        .nav-cta:hover{background:var(--gold); color:var(--bg) !important;}
+        .nav-cta:hover{background:var(--primary-hover); border-color:var(--primary-hover); color:#ffffff !important;}
 
         /* theme toggle */
         .theme-toggle{
@@ -1689,20 +1756,20 @@ export default function App() {
         .nav-right-mobile{display:none; align-items:center; gap:14px;}
 
         .order-banner{
-          position:fixed; top:0; left:0; right:0; z-index:110;
+          position:fixed; top:34px; left:0; right:0; z-index:110;
           display:flex; align-items:center; justify-content:center; gap:16px;
           padding:14px 20px; font-size:13px; font-weight:600; text-align:center;
           color:#fff; box-shadow:var(--shadow);
         }
         .order-banner.success{background:#1f7a3d;}
-        .order-banner.failed{background:#8a3b2b;}
-        .order-banner.cancelled{background:#5a5648;}
+        .order-banner.failed{background:#6E141A;}
+        .order-banner.cancelled{background:#333333;}
         .order-banner button{background:none; border:none; color:#fff; cursor:pointer; font-size:14px; opacity:0.8;}
         .order-banner button:hover{opacity:1;}
         .burger span{width:26px; height:2px; background:var(--text); display:block;}
 
         .mobile-panel{
-          position:fixed; inset:0; background:var(--bg); z-index:65;
+          position:fixed; inset:0; top:34px; background:var(--bg); z-index:65;
           display:flex; flex-direction:column; align-items:center; justify-content:center;
           gap:26px; transform:translateY(-100%); transition:transform 0.45s ease;
           padding:20px; width:100%; max-width:100%; box-sizing:border-box;
@@ -1753,10 +1820,10 @@ export default function App() {
           transition:transform 0.25s ease, background 0.25s ease, border-color 0.25s ease, color .25s ease;
         }
         .btn:hover{transform:translateY(-2px);}
-        .btn-gold{background:var(--gold); color:var(--bg);}
-        .btn-gold:hover{background:var(--gold-soft);}
+        .btn-gold{background:var(--primary); color:#ffffff; border-color:var(--primary);}
+        .btn-gold:hover{background:var(--primary-hover); border-color:var(--primary-hover); color:#ffffff;}
         .btn-outline{border-color:var(--line); color:var(--text);}
-        .btn-outline:hover{border-color:var(--gold); color:var(--gold-soft);}
+        .btn-outline:hover{border-color:var(--primary); color:var(--primary);}
         .btn-wa{border-color:#3fae5c; color:#2f8a49;}
         .sd-root[data-theme="dark"] .btn-wa{color:#8fe0a4;}
         .btn-wa:hover{background:#1f3b26; color:#c9f2d1 !important; border-color:#1f3b26;}
@@ -1821,8 +1888,8 @@ export default function App() {
           padding:10px 18px; border-radius:30px; font-size:12px; font-weight:600;
           letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; transition:all 0.2s ease;
         }
-        .filter-tab.active{background:var(--gold); border-color:var(--gold); color:var(--bg);}
-        .filter-tab:not(.active):hover{border-color:var(--gold); color:var(--text);}
+        .filter-tab.active{background:var(--primary); border-color:var(--primary); color:#ffffff;}
+        .filter-tab:not(.active):hover{border-color:var(--primary); color:var(--primary);}
 
         /* ---------- story ---------- */
         .story-grid{
@@ -1832,14 +1899,14 @@ export default function App() {
           font-family:'Cormorant Garamond', serif; font-style:italic;
           font-size:clamp(22px,2.8vw,32px); line-height:1.4; color:var(--text);
         }
-        .story-quote span{color:var(--gold-soft);}
+        .story-quote span{color:var(--primary);}
         .story-copy{margin-top:26px; color:var(--text-dim); font-size:16px; line-height:1.8; max-width:560px;}
         .stat-list{display:flex; flex-direction:column; gap:0; border-top:1px solid var(--line);}
         .stat-row{
           display:flex; justify-content:space-between; padding:20px 0; border-bottom:1px solid var(--line);
         }
         .stat-row .k{font-size:11px; letter-spacing:0.2em; color:var(--text-dim);}
-        .stat-row .v{font-family:'Big Shoulders Display'; font-weight:700; font-size:16px; letter-spacing:0.03em; color:var(--gold-soft); text-align:right;}
+        .stat-row .v{font-family:'Big Shoulders Display'; font-weight:700; font-size:16px; letter-spacing:0.03em; color:var(--primary); text-align:right;}
 
         /* ---------- collection ---------- */
         .collection-grid{
@@ -1849,32 +1916,33 @@ export default function App() {
           transition:transform 0.15s ease-out; transform-style:preserve-3d;
         }
         .product-card{
-          border:1px solid var(--line); background:var(--panel);
+          border:1px solid var(--line); background:var(--product-card-bg, #FFFFFF);
           padding:16px; border-radius:4px; height:100%;
           display:flex; flex-direction:column; gap:14px;
           box-shadow:var(--shadow);
+          color:#17140f;
         }
         .swatch{
           height:320px; border-radius:3px; position:relative; overflow:hidden;
-          background:var(--bg-soft);
+          background:#FFFFFF;
         }
-        .swatch img{width:100%; height:100%; object-fit:cover; display:block; transition:transform 0.5s ease;}
+        .swatch img{width:100%; height:100%; object-fit:contain; display:block; transition:transform 0.5s ease; background:#FFFFFF;}
         .product-card:hover .swatch img{transform:scale(1.04);}
         .swatch::after{
           content:''; position:absolute; inset:0;
-          background:radial-gradient(220px 160px at var(--sx,50%) var(--sy,50%), rgba(255,255,255,0.10), transparent 60%);
+          background:radial-gradient(220px 160px at var(--sx,50%) var(--sy,50%), rgba(255,255,255,0.06), transparent 60%);
           pointer-events:none;
         }
         .card-tag{
           position:absolute; top:12px; left:12px; font-size:10px; letter-spacing:0.16em;
-          background:var(--bg); color:var(--gold-soft); padding:5px 9px; border:1px solid var(--gold);
+          background:var(--primary); color:#ffffff; padding:5px 9px; border:1px solid var(--primary-hover);
           z-index:2; font-weight:700; border-radius:2px;
         }
-        .product-cat{font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-dim);}
-        .product-name{font-family:'Big Shoulders Display'; font-size:25px; font-weight:700; margin:2px 0 0; color:var(--text);}
+        .product-cat{font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:#6b6558;}
+        .product-name{font-family:'Big Shoulders Display'; font-size:25px; font-weight:700; margin:2px 0 0; color:#17140f;}
         .price-row{display:flex; justify-content:space-between; align-items:baseline; margin-top:auto; padding-top:4px;}
-        .price-row .primary{font-family:'Big Shoulders Display', sans-serif; font-size:22px; font-weight:800; color:var(--gold-soft); letter-spacing:0.02em;}
-        .price-row .secondary{color:var(--text-dim); font-size:13px; font-weight:600;}
+        .price-row .primary{font-family:'Big Shoulders Display', sans-serif; font-size:22px; font-weight:800; color:var(--primary); letter-spacing:0.02em;}
+        .price-row .secondary{color:#6b6558; font-size:13px; font-weight:600;}
         .product-card{cursor:pointer;}
         .swatch-view{
           position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
@@ -1886,11 +1954,11 @@ export default function App() {
           display:inline-flex; align-items:center; gap:8px;
           padding:11px 22px; font-size:12px; font-weight:700; letter-spacing:0.14em;
           text-transform:uppercase; border-radius:2px; cursor:pointer;
-          background:var(--gold); color:var(--bg); border:none;
+          background:var(--primary); color:#ffffff; border:none;
           box-shadow:0 4px 18px rgba(0,0,0,0.4);
           transition:transform 0.18s ease, background 0.18s ease;
         }
-        .quick-view-btn:hover{transform:scale(1.05); background:var(--gold-soft);}
+        .quick-view-btn:hover{transform:scale(1.05); background:var(--primary-hover);}
         .quick-view-label{font-size:11px; letter-spacing:0.18em; color:rgba(255,255,255,0.75); text-transform:uppercase;}
         .look-frame{cursor:pointer;}
 
@@ -1900,7 +1968,7 @@ export default function App() {
           display:flex; align-items:center; justify-content:center; padding:4px;
         }
         .cart-badge{
-          position:absolute; top:-6px; right:-8px; background:var(--gold); color:var(--bg);
+          position:absolute; top:-6px; right:-8px; background:var(--primary); color:#ffffff;
           font-size:10px; font-weight:700; border-radius:50%; width:17px; height:17px;
           display:flex; align-items:center; justify-content:center;
         }
@@ -1971,8 +2039,8 @@ export default function App() {
         /* ---------- cart drawer ---------- */
         .drawer{
           position:fixed; top:0; right:0; bottom:0; width:min(420px, 100vw);
-          background:var(--panel); box-shadow:var(--shadow); display:flex; flex-direction:column;
-          padding:24px; z-index:2;
+          background:var(--bg-soft); box-shadow:var(--shadow); display:flex; flex-direction:column;
+          padding:24px; z-index:125;
         }
         .drawer-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
         .drawer-head h3{font-family:'Big Shoulders Display'; font-size:22px; margin:0; color:var(--text);}
@@ -2049,17 +2117,20 @@ export default function App() {
 
         /* ---------- footer ---------- */
         footer{
-          border-top:1px solid var(--line); padding:50px clamp(20px,6vw,80px) 34px;
+          background:var(--footer-bg, #0D0D0D); color:var(--footer-text, #F7F5F0);
+          border-top:1px solid rgba(255,255,255,0.08); padding:50px clamp(20px,6vw,80px) 34px;
           display:flex; flex-wrap:wrap; justify-content:space-between; gap:30px;
         }
-        .footer-tag{color:var(--text-dim); font-size:14px; max-width:320px; margin-top:10px;}
+        .footer-tag{color:var(--footer-dim, #999999); font-size:14px; max-width:320px; margin-top:10px;}
         .footer-links{display:flex; gap:28px; flex-wrap:wrap;}
-        .footer-links a{font-size:12px; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-dim);}
-        .footer-links a:hover{color:var(--gold-soft);}
-        .footer-bottom{width:100%; margin-top:34px; padding-top:20px; border-top:1px solid var(--line);
+        .footer-links a{font-size:12px; letter-spacing:0.16em; text-transform:uppercase; color:var(--footer-dim, #999999);}
+        .footer-links a:hover{color:var(--primary);}
+        .footer-bottom{width:100%; margin-top:34px; padding-top:20px; border-top:1px solid rgba(255,255,255,0.08);
           display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;
-          font-size:11px; letter-spacing:0.08em; color:var(--text-dim);
+          font-size:11px; letter-spacing:0.08em; color:var(--footer-dim, #999999);
         }
+        footer .wordmark{color:#FFFFFF;}
+        footer .wordmark:hover{color:var(--primary);}
 
         /* ---------- floating whatsapp ---------- */
         .wa-fab{
@@ -3224,6 +3295,17 @@ export default function App() {
           color: var(--gold);
         }
       `}</style>
+
+      {/* ---------------- TOP ANNOUNCEMENT BAR ---------------- */}
+      <aside className="top-announcement-bar" role="region" aria-label="Store announcement">
+        <div className="announcement-inner">
+          <span className="announcement-badge">DROP 04 IS LIVE</span>
+          <span className="announcement-dot">•</span>
+          <span>LAGOS-ROOTED, WORLD-BOUND STREETWEAR</span>
+          <span className="announcement-dot">•</span>
+          <span>COMPLIMENTARY SHIPPING IN LAGOS</span>
+        </div>
+      </aside>
 
       {/* ---------------- NAV ---------------- */}
       <nav className="nav">
